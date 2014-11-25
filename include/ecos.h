@@ -35,7 +35,7 @@
 #endif
 
 /* ECOS VERSION NUMBER - FORMAT: X.Y.Z --------------------------------- */
-#define ECOS_VERSION ("1.1.0")
+#define ECOS_VERSION ("1.0.5")
 
 
 /* DEFAULT SOLVER PARAMETERS AND SETTINGS STRUCT ----------------------- */
@@ -55,10 +55,9 @@
 #define DELTAEXP (5E-8)
 #endif
 
-
 #define VERBOSE    (1)           /* bool for verbosity; PRINTLEVEL < 3   */
 #define NITREF     (9)       	 /* number of iterative refinement steps */
-#define IRERRFACT  (6)           /* factor by which IR should reduce err */
+#define IRERRFACT  (2)           /* factor by which IR should reduce err */
 #define LINSYSACC  (1E-14)       /* rel. accuracy of search direction    */
 #define SIGMAMIN   (1E-4)        /* always do some centering             */
 #define SIGMAMAX   (1.0)         /* never fully center                   */
@@ -66,7 +65,6 @@
 #define STEPMAX    (0.999)  /* largest step allowed, also in affine dir. */
 #define SAFEGUARD  (500)         /* Maximum increase in PRES before
                                                 ECOS_NUMERICS is thrown. */
-
 #ifdef EXPCONE
 #define MAX_BK           (90)    /*Maximum backtracking steps*/
 #define BK_SCALE         (0.8)   /*Backtracking scaling*/
@@ -80,7 +78,7 @@
 /* EQUILIBRATION METHOD ------------------------------------------------ */
 #define EQUILIBRATE (1)     /* use equlibration of data matrices? >0: yes */
 #define EQUIL_ITERS (3)         /* number of equilibration iterations  */
-#define RUIZ_EQUIL      /* define algorithm to use - if both are ... */
+//#define RUIZ_EQUIL      /* define algorithm to use - if both are ... */
 /*#define ALTERNATING_EQUIL*/ /* ... commented out no equlibration is used */
 
 
@@ -269,8 +267,6 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
                    pfloat* Gpr, idxint* Gjc, idxint* Gir,
                    pfloat* Apr, idxint* Ajc, idxint* Air,
                    pfloat* c, pfloat* h, pfloat* b);
-
-
 #ifdef EXPCONE
 pfloat expConeLineSearch(pwork* w, idxint affine);
 #endif
