@@ -151,6 +151,20 @@ void use_alternating_norm_equilibration(pwork *w)
       ind += w->C->soc[i].p;
     }
 
+#ifdef EXPCONE 
+    /*Do the same for the exponential cones*/
+ for(i = 0; i < w->C->nexc; i++) {
+      sum = 0.0;
+      for(j = 0; j < 3; j++) {
+        sum += w->Gequil[ind + j];
+      }
+      for(j = 0; j < 3; j++) {
+        w->Gequil[ind + j] = sum / 3.0;
+      }
+      ind += 3;
+    }
+#endif
+
     /* get the norm */
     for(i = 0; i < num_A_rows; i++) {
       w->Aequil[i] = fabs(w->Aequil[i]) < 1e-6 ? 1.0 : sqrt(w->Aequil[i]);

@@ -22,7 +22,7 @@ amd:
 	$(AR) -x external/amd/libamd.a
 
 # build ECOS
-ECOS_OBJS = ecos.o kkt.o cone.o spla.o ctrlc.o timer.o preproc.o splamm.o equil.o
+ECOS_OBJS = ecos.o kkt.o cone.o spla.o ctrlc.o timer.o preproc.o splamm.o equil.o wright_omega.o
 .PHONY: ecos
 ecos: $(ECOS_OBJS)
 	$(ARCHIVE) libecos.a $(ECOS_OBJS) amd_*.o ldl*.o
@@ -58,6 +58,10 @@ timer.o: src/timer.c include/timer.h
 
 equil.o: src/equil.c include/equil.h
 	$(C) -c src/equil.c -o equil.o
+
+wright_omega.o: src/wright_omega.c include/wright_omega.h
+	$(C) -c src/wright_omega.c -o wright_omega.o
+
 
 # ECOS demo
 .PHONY: demo

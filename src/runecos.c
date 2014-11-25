@@ -38,7 +38,12 @@ int main(void)
 #endif
 	
 	/* set up data */	
+#ifdef EXPCONE
+	mywork = ECOS_setup(n, m, p, l, ncones, q, 0, Gpr, Gjc, Gir, Apr, Ajc, Air, c, h, b);
+#else
 	mywork = ECOS_setup(n, m, p, l, ncones, q, Gpr, Gjc, Gir, Apr, Ajc, Air, c, h, b);
+#endif
+ 
     if( mywork != NULL ){
 	
 	/* solve */	

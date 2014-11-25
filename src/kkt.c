@@ -167,6 +167,15 @@ idxint kkt_solve(kkt* KKT, spmat* A, spmat* G, pfloat* Pb, pfloat* dx, pfloat* d
             kk += 2;
 #endif
         }
+#ifdef EXPCONE 
+        for(l=0; l<C->nexc; l++)
+        {
+            for(i=0;i<3;i++)
+            {
+                ez[kk++] = Pb[Pinv[k++]]-Gdx[j++];
+            }
+        }
+#endif
         for( i=0; i<MTILDE; i++) { truez[i] = Px[Pinv[n+p+i]]; }
         if( isinit == 0 ){
             scale2add(truez, ez, C);

@@ -25,6 +25,13 @@
 %     dims.q(N), where a second order cone of dimension m is defined as
 % 
 %         { (u0, u1) in R x R^{m-1} | u0 >= ||u1||_2 }.
+%
+%     When compiled with exponential cone support, the cones C_{N+1}
+%     to C_{N+dims.e} are 3 variable exponential cones. 
+%     Each exponential cone is the set
+%        closure{(u,v,w) \in R^3 | 0<v, 0<w, wexp(u/w) < v}.
+%     
+%
 % 
 %     Input arguments:
 % 
@@ -38,8 +45,8 @@
 % 
 %         G is a sparse matrix of size (K,n), where
 % 
-%             K = dims.l + dims.q(1) + ... + dims.q(N).
-%               = dims.l + sum(dims.q)
+%             K = dims.l + dims.q(1) + ... + dims.q(N) + 3*dims.e
+%               = dims.l + sum(dims.q) + 3*dims.e
 % 
 %         Each column of G describes a vector
 % 

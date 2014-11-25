@@ -36,6 +36,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     const mxArray* dims;
     const mxArray* dims_l;
     const mxArray* dims_q;
+#ifdef EXPCONE
+    const mxArray* dims_e;
+#endif
     const mxArray* opts = NULL;
     const mxArray* opts_verbose = NULL;
     const mxArray* opts_feastol = NULL;
@@ -45,6 +48,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     const mxArray* opts_reltol_inacc = NULL;
     const mxArray* opts_abstol_inacc = NULL;
     const mxArray* opts_maxit = NULL;
+#ifdef EXPCONE
+    const mxArray* opts_centrality = NULL;
+    const mxArray* opts_potential  = NULL;
+#endif 
     const mwSize *size_c;
     const mwSize *size_G;
     const mwSize *size_h;
@@ -98,6 +105,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     double *q;
     idxint *qint;
     idxint ncones;
+#ifdef EXPCONE
+    idxint nexc;
+#endif
     idxint numConicVariables = 0;
     
     /* options */
@@ -138,6 +148,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     dims_l = dims ? mxGetField(dims, 0, "l") : NULL;
     dims_q = dims ? mxGetField(dims, 0, "q") : NULL; 
     size_q = dims_q ? mxGetDimensions(dims_q) : (const mwSize *) &ZERO;
+#ifdef EXPCONE
+    dims_e = dims ? mxGetField(dims,0, "e") : NULL;
+#endif
     if( nrhs >= 6 )
     {
         A = prhs[4];  size_A = A ? mxGetDimensions(A) : (const mwSize *) &ZERO;
@@ -154,6 +167,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       opts_feastol_inacc = opts ? mxGetField(opts, 0, "feastol_inacc") : 0;
       opts_reltol_inacc = opts ? mxGetField(opts, 0, "reltol_inacc") : 0;
       opts_maxit = opts ? mxGetField(opts, 0, "maxit") : 0;
+#ifdef EXPCONE
+      opts_centrality = opts ? mxGetField(opts,0,"centrality") : 0;
+      opts_potential  = opts ? mxGetField(opts,0,"potential") : 0;
+#endif 
     }
     
     /* determine sizes */
@@ -199,10 +216,15 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     {
         mexErrMsgTxt("Struct dims expected as 4th argument");
     }
-
+#ifdef EXPCONE
+    if( dims_l == NULL && dims_q == NULL && dims_e == NULL)	{
+        mexErrMsgTxt("Neither dims.l nor dims.q exist nor dims.e - unconstrained problem?");
+    }
+#else
     if( dims_l == NULL && dims_q == NULL )	{
         mexErrMsgTxt("Neither dims.l nor dims.q exist - unconstrained problem?");
-    } 
+    }
+#endif
         
     if( mxIsSparse(c) )
     {
@@ -272,7 +294,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     } else {
         ncones = size_q[1] > size_q[0] ? size_q[1] : size_q[0];
     }
-    
+#ifdef EXPCONE
+    nexc = dims_e ? (idxint)(*mxGetPr(dims_e)):0; numConicVariables += 3*nexc;
+#endif
     /* get problem data in right format matrices */
     if( m > 0){
         Gpr = (pfloat *)mxGetPr(G);
@@ -301,9 +325,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     if ( numConicVariables != m ) {
         mexErrMsgTxt("Number of rows does not match information given in dims");
     }
-    
+#ifdef EXPCONE 
     /* This calls ECOS setup function. */
+    mywork = ECOS_setup(n, m, p, l, ncones, qint, nexc, Gpr, Gjc, Gir, Apr, Ajc, Air, cpr, hpr, bpr);
+#else
     mywork = ECOS_setup(n, m, p, l, ncones, qint, Gpr, Gjc, Gir, Apr, Ajc, Air, cpr, hpr, bpr);
+#endif
     if( mywork == NULL ){
         mexErrMsgTxt("Internal problem occurred in ECOS while setting up the problem.\nPlease send a bug report with data to Alexander Domahidi.\nEmail: domahidi@control.ee.ethz.ch");
     }
@@ -342,6 +369,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         {
             mywork->stgs->maxit = (idxint)(*mxGetPr(opts_maxit));
         }
+#ifdef EXPCONE
+        if(opts_centrality != NULL)
+        {
+            mywork->stgs->centrality = (pfloat)(*mxGetPr(opts_centrality));
+        }
+        if(opts_potential != NULL)
+        {
+            mywork->stgs->potential = mxIsLogical(opts_potential) ? (idxint)(*mxGetLogicals(opts_potential)) : (idxint)(*mxGetPr(opts_verbose));
+        }
+
+#endif
         
     }
       

@@ -6,7 +6,9 @@ end
 if isempty( shim.name ),
     fname = [ 'ecos.', mexext ];
     shim.name = 'ECOS';
-    shim.dualize = true;
+    %shim.dualize = true;
+    shim.config = struct( 'dualize', 1, 'nonnegative', 1, 'lorentz', 1, ...
+                          'exponential', 1); 
     flen = length(fname);
     fpaths = which( fname, '-all' );
     if ~iscell(fpaths),
@@ -70,9 +72,9 @@ function [ x, status, tol, iters, y, z ] = solve( At, b, c, nonls, quiet, prec, 
 
 n = length( c );
 m = length( b );
-K = struct( 'f', 0, 'l', 0, 'q', [] );
+K = struct( 'f', 0, 'l', 0, 'q', [], 'e', 0 );
 reord = struct( 'n', 0, 'r', [], 'c', [], 'v', [] );
-reord = struct( 'f', reord, 'l', reord, 'a', reord, 'q', reord, 'r', reord );
+reord = struct( 'f', reord, 'l', reord, 'a', reord, 'q', reord, 'r', reord, 'e', reord );
 reord.f.n = n;
 zinv = [];
 for k = 1 : length( nonls ),
@@ -107,6 +109,13 @@ for k = 1 : length( nonls ),
             reord.q.n = reord.q.n + nnv;
             K.q = [ K.q, nn * ones( 1, nv ) ];
         end
+    elseif isequal( tt, 'exponential' ),
+             temp      = [ temp(:)];
+             reord.e.r = [ reord.e.r ; temp(:) ];
+             reord.e.c = [ reord.e.c ; reord.e.n + ( 1 : nnv )' ];
+             reord.e.v = [ reord.e.v ; ones(nnv,1) ];
+             reord.e.n = reord.e.n + nnv;
+             K.e = K.e + nv;
     elseif isequal( tt, 'semidefinite' ),
         if nn == 3,
             temp = temp( [1,1,3,3,2], : );
@@ -143,7 +152,7 @@ for k = 1 : length( nonls ),
 end
 if reord.f.n > 0,
     reord.f.r = ( 1 : n )';
-    reord.f.r( [ reord.l.r ; reord.a.r ; reord.q.r ] ) = [];
+    reord.f.r( [ reord.l.r ; reord.a.r ; reord.q.r; reord.e.r ] ) = [];
     reord.f.c = ( 1 : reord.f.n )';
     reord.f.v = ones(reord.f.n,1);
 end
@@ -157,14 +166,29 @@ n_out = reord.f.n;
 reord.l.c = reord.l.c + n_out; n_out = n_out + reord.l.n;
 reord.a.c = reord.a.c + n_out; n_out = n_out + reord.a.n;
 reord.q.c = reord.q.c + n_out; n_out = n_out + reord.q.n;
+reord.e.c = reord.e.c + n_out; n_out = n_out + reord.e.n;
 reord = sparse( ...
-    [ reord.f.r ; reord.l.r ; reord.a.r ; reord.q.r ], ...
-    [ reord.f.c ; reord.l.c ; reord.a.c ; reord.q.c ], ...
-    [ reord.f.v ; reord.l.v ; reord.a.v ; reord.q.v ], ...
+    [ reord.f.r ; reord.l.r ; reord.a.r ; reord.q.r ;  reord.e.r], ...
+    [ reord.f.c ; reord.l.c ; reord.a.c ; reord.q.c ;  reord.e.c], ...
+    [ reord.f.v ; reord.l.v ; reord.a.v ; reord.q.v ;  reord.e.v], ...
     n, n_out );
+
+
+%Deal with the transformation to the dual exponential cones
+cone_reord_i = ones(3,1)*3*[0:K.e-1]+[1;2;3]*ones(1,K.e);
+cone_reord_j = ones(3,1)*3*[0:K.e-1]+[2;3;1]*ones(1,K.e);
+B = sparse(cone_reord_i(:),cone_reord_j(:),repmat([-1;exp(1);-1],K.e,1));
+%B (\tildeK)^* = K
+%Where \tildeK^\star = {(x,y,z) -xexp(y/x)<ez, x<0 0<z}
+%and K               = {(x,y,z) zexp(x/z)<y
+
 
 At = reord' * At;
 c  = reord' * c;
+
+At(end-3*K.e+1:end,:) = B*At(end-3*K.e+1:end,:);
+c(end-3*K.e+1:end) = B*c(end-3*K.e+1:end);
+
 
 opts.verbose = 1;
 if quiet,
@@ -194,6 +218,10 @@ tol = info.r0;
 iters = info.iter;
 xx = full( xx );
 yy = full( yy );
+
+%Undo the effect of B on x
+xx(end-3*K.e+1:end) = B'*xx(end-3*K.e+1:end);
+
 status = '';
 if info.pinf ~= 0,
     status = 'Infeasible';
