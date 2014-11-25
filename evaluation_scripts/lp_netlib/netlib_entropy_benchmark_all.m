@@ -39,12 +39,12 @@
   tuned_scalings.lp_cre_c.gz =1000;
 
   tuned_scalings.lp_cre_d.gx =100;
-  tuned_scalings.lp_cre_d.gy =3;
-  tuned_scalings.lp_cre_d.gz =10;
-  tuned_scalings.lp_cre_d.gt =1;
+  tuned_scalings.lp_cre_d.gy =1000;
+  tuned_scalings.lp_cre_d.gz =5;
+  tuned_scalings.lp_cre_d.gt =1/10;
 
   %Choose a problem from the list
-  for problem_index = 16
+  for problem_index = 1:problem_count
     
     %Extract the problem 
     problem_uf_ix = st_ix(problem_index);
