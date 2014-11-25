@@ -1,0 +1,9 @@
+This directory contains the scripts used to create the plots
+reported in the PhD Thesis Defense by Santiago Akle.
+
+The file ./lp_netlib/netlib_entropy_benchmark_all.m 
+requires an installation of PDCO http://web.stanford.edu/group/SOL/software/pdco/
+an installation of MOSEK 7 http://www.mosek.com/
+and and UFget http://www.cise.ufl.edu/research/sparse/mat/UFget.html
+
+
