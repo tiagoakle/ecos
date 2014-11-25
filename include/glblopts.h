@@ -44,7 +44,7 @@ typedef double pfloat;              /* for numerical values  */
                            /* 2: detailed profiling                      */
 
 /* SET DEBUG LEVEL ----------------------------------------------------- */
-#define DEBUG (1)          /* 0: no debugging information                */
+#define DEBUG (0)          /* 0: no debugging information                */
                            /* 1: debug info & dump intermediate results  */
                            /* (flag used only for development)           */
 
@@ -52,6 +52,9 @@ typedef double pfloat;              /* for numerical values  */
 #ifndef NAN
 #define NAN ((double)0x7ff8000000000000)
 #endif
+
+/* Exponential cone */
+#define EXPCONE       /*When defined the exponential cone solver code is enabled*/
 
 /* SYSTEM INCLUDES FOR PRINTING ---------------------------------------- */
 #if PRINTLEVEL > 0

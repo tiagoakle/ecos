@@ -25,8 +25,6 @@
 
 #include "glblopts.h"
 
-#define EXPCONE       /*When defined the exponential cone solver code is enabled*/
-                    
 
 #define CONEMODE (0)  /* 0: expand to sparse cones (ECOS standard)       */
                       /* 1: dense cones (slow for big cones)             */

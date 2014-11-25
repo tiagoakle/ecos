@@ -180,6 +180,9 @@ static PyObject *csolve(PyObject* self, PyObject *args, PyObject *kwargs)
   idxint l = 0;
   idxint *q = NULL;
 
+#ifdef EXPCONE
+    idxint nexc;
+#endif 
 
   pfloat *Gpr = NULL;
   idxint *Gjc = NULL;
@@ -375,6 +378,28 @@ static PyObject *csolve(PyObject* self, PyObject *args, PyObject *kwargs)
     }
   }
 
+#ifdef EXPCONE
+    /*Get the number of exponential cones from dims['e']*/
+  /* get dims['e'] */
+  PyObject *exponentialObj = PyDict_GetItemString(dims, "e");
+  if(exponentialObj) {
+    if(PyInt_Check(exponentialObj) && ((nexc = (idxint) PyInt_AsLong(exponentialObj)) >= 0)) {
+        numConicVariables += 3*nexc;
+    } else {
+      PyErr_SetString(PyExc_TypeError, "dims['e'] ought to be a nonnegative integer");
+      Py_DECREF(Gx_arr); Py_DECREF(Gi_arr); Py_DECREF(Gp_arr);
+      Py_DECREF(c_arr); Py_DECREF(h_arr);
+      return NULL;
+    }
+  }
+  else
+  {
+    nexc = 0;
+  }
+
+#endif 
+
+
   if(Ax && Ai && Ap && b) {
     /* set A */
     if( !PyArray_ISFLOAT(Ax) || PyArray_NDIM(Ax) != 1 ) {
@@ -477,7 +502,11 @@ static PyObject *csolve(PyObject* self, PyObject *args, PyObject *kwargs)
 
   /* check that sum(q) + l = m */
   if( numConicVariables != m ){
+#ifdef EXPCONE
+      PyErr_SetString(PyExc_ValueError, "Number of rows of G does not match dims.l+sum(dims.q)+dims.e");
+#else
       PyErr_SetString(PyExc_ValueError, "Number of rows of G does not match dims.l+sum(dims.q)");
+#endif
       if (q) free(q);
       Py_DECREF(Gx_arr); Py_DECREF(Gi_arr); Py_DECREF(Gp_arr);
       Py_DECREF(c_arr); Py_DECREF(h_arr);
@@ -489,7 +518,11 @@ static PyObject *csolve(PyObject* self, PyObject *args, PyObject *kwargs)
   }
 
   /* This calls ECOS setup function. */
+#ifdef EXPCONE
+  mywork = ECOS_setup(n, m, p, l, ncones, q, nexc, Gpr, Gjc, Gir, Apr, Ajc, Air, cpr, hpr, bpr);
+#else
   mywork = ECOS_setup(n, m, p, l, ncones, q, Gpr, Gjc, Gir, Apr, Ajc, Air, cpr, hpr, bpr);
+#endif
   if( mywork == NULL ){
       PyErr_SetString(PyExc_RuntimeError, "Internal problem occurred in ECOS while setting up the problem.\nPlease send a bug report with data to Alexander Domahidi.\nEmail: domahidi@control.ee.ethz.ch");
       if(q) free(q);

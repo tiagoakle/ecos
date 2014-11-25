@@ -266,7 +266,7 @@ idxint init(pwork* w)
     /* Initialize KKT matrix */
     kkt_init(w->KKT->PKPt, w->KKT->PK, w->C);
 
-#if DEBUG > 0
+#if DEBUG > 0 && PRINTLEVEL > 2
     dumpSparseMatrix(w->KKT->PKPt, "PKPt0.txt");
 #endif
 
@@ -283,6 +283,12 @@ idxint init(pwork* w)
         w->KKT->RHS1[w->KKT->Pinv[k++]] = 0;
 #endif
 	}
+#ifdef EXPCONE
+    for( l=0; l<w->C->nexc; l++)
+    { 
+        for(i=0; i<3; i++){ w->KKT->RHS1[w->KKT->Pinv[k++]] = w->h[j++]; }
+    }
+#endif
 #if PRINTLEVEL > 2
     PRINTTEXT("Written %d entries of RHS1\n", (int)k);
 #endif
@@ -544,29 +550,19 @@ void printProgress(stats* info)
 		PRINTTEXT("It     pcost       dcost      gap   pres   dres    k/t    mu     step    IR       BT    1-sigma\n");
 		PRINTTEXT("%2d  %+5.3e  %+5.3e  %+2.0e  %2.0e  %2.0e  %2.0e  %2.0e   N/A    %d %d -  - - - - - -  -\n",(int)info->iter, info->pcost, info->dcost, info->gap, info->pres, info->dres, info->kapovert, info->mu, (int)info->nitref1, (int)info->nitref2);
 #else
-		PRINTTEXT("It     pcost         dcost      gap     pres    dres     k/t     mu      step  sigma   IR     BT   \n");
-		PRINTTEXT("%2d  %c%+5.3e  %c%+5.3e  %c%+2.0e  %c%2.0e  %c%2.0e  %c%2.0e  %c%2.0e    N/A          %d %d -   | po  c  b  C  P  D | po  c  b  C  P  D\n",(int)info->iter, 32, info->pcost, 32, info->dcost, 32, info->gap, 32, info->pres, 32, info->dres, 32, info->kapovert, 32, info->mu, (int)info->nitref1, (int)info->nitref2);
+		PRINTTEXT("It     pcost         dcost      gap     pres    dres     k/t     mu      step  sigma   IR     |  BT   \n");
+		PRINTTEXT("%2d  %c%+5.3e  %c%+5.3e  %c%+2.0e  %c%2.0e  %c%2.0e  %c%2.0e  %c%2.0e    N/A          %d %d -   | -  - \n",(int)info->iter, 32, info->pcost, 32, info->dcost, 32, info->gap, 32, info->pres, 32, info->dres, 32, info->kapovert, 32, info->mu, (int)info->nitref1, (int)info->nitref2);
 #endif	
 	}  else {
 #if defined _WIN32 || defined _WIN64
 		PRINTTEXT("%2d  %+5.3e  %+5.3e  %+2.0e  %2.0e  %2.0e  %2.0e  %2.0e  %6.4f  %d %d %d  %d %d %d %d %d %d %2.0e\n",(int)info->iter, info->pcost, info->dcost, info->gap, info->pres, info->dres, info->kapovert, info->mu, info->step, (int)info->nitref1, (int)info->nitref2, (int)info->nitref3, (int)info->affPb, (int)info->affDb, (int)info->affBb, (int)info->cmbPb, (int)info->cmbDb, (int)info->cmbBb, info->sigma);
 #else
-		PRINTTEXT("%2d  %c%+5.3e%c  %+5.3e %c %+2.0e%c  %2.0e%c  %2.0e%c  %2.0e%c  %2.0e%c  %6.4f %2.0e %2d %2d %2d | %2d %2d %2d %2d %2d %2d | %2d %2d %2d %2d %2d %2d \n",(int)info->iter, 32,info->pcost, 32,info->dcost, 32, info->gap, 32, info->pres, 32, info->dres, 32, info->kapovert, 32, info->mu, 32, info->step, info->sigma,\
+		PRINTTEXT("%2d  %c%+5.3e%c  %+5.3e %c %+2.0e%c  %2.0e%c  %2.0e%c  %2.0e%c  %2.0e%c  %6.4f %2.0e %2d %2d %2d | %2d %2d \n",(int)info->iter, 32,info->pcost, 32,info->dcost, 32, info->gap, 32, info->pres, 32, info->dres, 32, info->kapovert, 32, info->mu, 32, info->step, info->sigma,\
    (int)info->nitref1,\
    (int)info->nitref2,\
    (int)info->nitref3,\
-   (int)info->affPob,\
-   (int)info->affCb,\
-   (int)info->affBb,\
-   (int)info->affCob,\
-   (int)info->affPb,\
-   (int)info->affDb,\
-   (int)info->cmbPob,\
-   (int)info->cmbCb,\
-   (int)info->cmbBb,\
-   (int)info->cmbCob,\
-   (int)info->cmbPb,\
-   (int)info->cmbDb);
+   (int)info->affBack,\
+   (int)info->cmbBack);
 
 #endif
 	}
@@ -753,7 +749,6 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
     pfloat min_potential,min_potential_alpha;
     pfloat potential;
 
-    pfloat distance = 1e300;
     pfloat expmu, mui;      
     
     //Initial alpha
@@ -761,7 +756,6 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
     //Pointers to counters
     idxint* pob;
     idxint* cb;
-    idxint* bb;  
     idxint* cob;
     idxint* pb; 
     idxint* db;    
@@ -771,7 +765,6 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
         alpha = w->info->step_aff;
         pob = &w->info->affPob;
         cb  = &w->info->affCb;
-        bb  = &w->info->affBb;
         cob = &w->info->affCob;
         pb  = &w->info->affPb;   
         db  = &w->info->affDb;
@@ -781,7 +774,6 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
         alpha = w->info->step;
         pob = &w->info->cmbPob;
         cb  = &w->info->cmbCb;
-        bb  = &w->info->cmbBb;
         cob = &w->info->cmbCob;
         pb  = &w->info->cmbPb;   
         db  = &w->info->cmbDb;
@@ -790,7 +782,6 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
     //Initialize the counters
     *pob = 0;  
     *cb  = 0; 
-    *bb  = 0; 
     *cob = 0; 
     *pb  = 0;   
     *db  = 0; 
@@ -801,14 +792,6 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
 
     //Start of the actual linesearch 
     
-    //Calculate the initial expmu
-    //expmu = 0.0;
-    //for(j=w->C->fexv;j<w->m;j++)
-    //{
-    //    expmu += s[j]*z[j];
-    //}
-    //expmu = expmu/(3.0*w->C->nexc);
-
     //Potential for the present point
     if(affine == 0)
     {  
@@ -854,10 +837,7 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
                 }
                 //If all the mui are larger than MIN_DISTANCE*exmpu then j == m
                 if(j==w->m)
-                { 
-                    distance =  MIN_DISTANCE*expmu + 1;
-                    if(distance>MIN_DISTANCE*expmu) // if all cones are far enough from the boundary
-                    {
+                {  
                         *centrality = evaluate_functional_centrality(ws, wz, w->C->fexv, expmu, w->C->nexc);
                         if(*centrality<w->stgs->centrality)
                         {
@@ -895,17 +875,7 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
 #endif  
                                   /*Count a backtrack due to centrality violation*/
                                   (*cb)++;
-                       }
-                    }
-                    else /* Too close to the boundary*/
-                    {
-
-#if PRINTLEVEL           > 2
-                                 PRINTTEXT("Iterate too close to boundary %e, step %e , mu %e\n",distance,alpha,expmu);
-#endif  
-                                  /*Count a backtrack due to a cone converging too fast */
-                                  (*bb)++;                    
-                    }
+                       } 
                 }
                 else /* At least one mui is too small*/
                 {
@@ -1083,8 +1053,8 @@ idxint ECOS_solve(pwork* w)
         idxint k;
 #endif
 
-#if DEBUG
-    char fn[20];
+#if DEBUG && PRINTLEVEL > 2
+    char fn[30];
 #endif
     
 #if (defined _WIN32 || defined _WIN64 )
@@ -1284,7 +1254,7 @@ idxint ECOS_solve(pwork* w)
 		/* Update KKT matrix with scalings */
 		kkt_update(w->KKT->PKPt, w->KKT->PK, w->C);
         
-#if DEBUG > 0
+#if DEBUG > 0 && PRINTLEVEL > 2
         /* DEBUG: Store matrix to be factored */
         sprintf(fn, "PKPt_updated_%02i.txt", (int)w->info->iter);
         dumpSparseMatrix(w->KKT->PKPt, fn);
@@ -1298,7 +1268,7 @@ idxint ECOS_solve(pwork* w)
         KKT_FACTOR_RETURN_CODE = kkt_factor(w->KKT, w->stgs->eps, w->stgs->delta);
 #endif
         
-#if DEBUG > 0
+#if DEBUG > 0 && PRINTLEVEL > 2
         /* DEBUG: store factor */
         sprintf(fn, "PKPt_factor_%02i.txt", (int)w->info->iter);
         dumpSparseMatrix(w->KKT->L, fn);
@@ -1379,10 +1349,27 @@ idxint ECOS_solve(pwork* w)
 #if PRINTLEVEL > 2
     PRINTTEXT("Backtrack affine\n");
 #endif        
+        //Set the affine backtracking counter to zero
+        w->info->affBack = 0;
         if(w->C->nexc>0)
             {
             w->info->step_aff = expConeLineSearch(w,1);
-            
+            //Sum all the backtracking steps 
+            //Sum the backtracking counts 
+            w->info->affBack+= w->info->affPob;
+            w->info->affBack+=w->info->affCb;
+            w->info->affBack+= w->info->affCob;
+            w->info->affBack+=w->info->affPb;
+            w->info->affBack+=w->info->affDb;
+
+#if PRINTLEVEL > 2 
+           PRINTTEXT("Affine backtracking %d %d %d %d %d %d \n",\
+           (int)w->info->affPob,\
+           (int)w->info->affCb,\
+           (int)w->info->affCob,\
+           (int)w->info->affPb,\
+           (int)w->info->affDb);
+#endif
             //Detect linesearch failure, recover and end.
             if(w->info->step_aff == -1)
             {
@@ -1427,6 +1414,11 @@ idxint ECOS_solve(pwork* w)
 		/*  ds_by_W = -(lambda \ bs + conelp_timesW(scaling,dz,dims)); */
 		/* note that ath this point w->dsaff_by_W holds already (lambda \ ds) */
 		scale(w->KKT->dz2, w->C, w->W_times_dzaff);
+
+#ifdef EXPCONE
+        for( i=fc; i<w->m; i++){ w->W_times_dzaff[i] = w->KKT->dz2[i];} //Copy the exponential variables
+#endif
+
 		for( i=0; i < w->m; i++ ){ w->dsaff_by_W[i] = -(w->dsaff_by_W[i] + w->W_times_dzaff[i]); }
 
 		/* dkap = -(bkap + kap*dtau)/tau; */
@@ -1458,14 +1450,25 @@ idxint ECOS_solve(pwork* w)
         // Now dsaff_by_W has dsaff         
 
 
-#if PRINTLEVEL > 2
-    PRINTTEXT("Backtrack combined\n");
-#endif 
+    //Set the backtracking counter to zero
+    w->info->cmbBack = 0;
     if(w->C->nexc>0)
     {
         w->info->step = expConeLineSearch(w,0);
+        //Sum the backtracking counts 
+        w->info->cmbBack+= w->info->cmbPob;
+        w->info->cmbBack+=w->info->cmbCb;
+        w->info->cmbBack+= w->info->cmbCob;
+        w->info->cmbBack+=w->info->cmbPb;
+        w->info->cmbBack+=w->info->cmbDb;
+
 #if PRINTLEVEL > 2
-    PRINTTEXT("Centrality after combined %e, step %e \n",w->info->centrality,w->info->step);
+        PRINTTEXT("Combined backtracking %d %d %d %d %d \n",\
+        (int)w->info->cmbPob,\
+        (int)w->info->cmbCb,\
+        (int)w->info->cmbCob,\
+        (int)w->info->cmbPb,\
+        (int)w->info->cmbDb);
 #endif
  
          //Detect linesearch failure, recover and end.
@@ -1473,11 +1476,9 @@ idxint ECOS_solve(pwork* w)
         {
 
 #if PRINTLEVEL > 1
-            //if( w->stgs->verbose ) deleteLastProgressLine( w->info );
-            PRINTTEXT("Combined failed skipping %d %d %d %d %d %d sigma %g\n",\
+            PRINTTEXT("Combined backtracking failed %d %d %d %d %d sigma %g\n",\
             (int)w->info->cmbPob,\
             (int)w->info->cmbCb,\
-            (int)w->info->cmbBb,\
             (int)w->info->cmbCob,\
             (int)w->info->cmbPb,\
             (int)w->info->cmbDb,\
@@ -1508,6 +1509,10 @@ idxint ECOS_solve(pwork* w)
 
 		/* ds = W*ds_by_W */
 		scale(w->dsaff_by_W, w->C, w->dsaff);
+
+#ifdef EXPCONE
+        for(i=fc;i<w->m;i++) {w->dsaff[i] = w->dsaff_by_W[i];}
+#endif
 
 		/* Update variables */
 		for( i=0; i < w->n; i++ ){ w->x[i] += w->info->step * w->KKT->dx2[i]; }

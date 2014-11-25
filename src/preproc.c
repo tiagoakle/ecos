@@ -848,7 +848,7 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
      */
     nK = KU->n;
     
-#if DEBUG > 0
+#if DEBUG > 0 && PRINTLEVEL > 2 
     dumpSparseMatrix(KU, "KU0.txt");
 #endif
 #if PRINTLEVEL > 2
@@ -916,7 +916,7 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
 	/* calculate inverse permutation and permutation mapping of KKT matrix */
 	pinv(nK, P, mywork->KKT->Pinv);		
 	Pinv = mywork->KKT->Pinv;
-#if DEBUG > 0
+#if DEBUG > 0 & PRINTLEVEL > 2
     dumpDenseMatrix_i(P, nK, 1, "P.txt");
     dumpDenseMatrix_i(mywork->KKT->Pinv, nK, 1, "PINV.txt");
 #endif
@@ -972,7 +972,7 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
 
 	/* permute KKT matrix - we work on this one from now on */
 	permuteSparseSymmetricMatrix(KU, mywork->KKT->Pinv, mywork->KKT->PKPt, NULL);
-#if DEBUG > 0
+#if DEBUG > 0 && PRINTLEVEL > 2
     dumpSparseMatrix(mywork->KKT->PKPt, "PKPt.txt");
 #endif
     	

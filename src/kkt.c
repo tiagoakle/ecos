@@ -310,6 +310,18 @@ void kkt_update(spmat* PKP, idxint* P, cone *C)
         }
 #endif
 	}
+#ifdef EXPCONE
+    /* Exponential cones */
+    for( i=0; i < C->nexc; i++){ 
+        PKP->pr[P[C->expc[i].colstart[0]]]   = -C->expc[i].v[0]-DELTAEXP;
+        PKP->pr[P[C->expc[i].colstart[1]]]   = -C->expc[i].v[1];
+        PKP->pr[P[C->expc[i].colstart[1]+1]] = -C->expc[i].v[2]-DELTAEXP;
+        PKP->pr[P[C->expc[i].colstart[2]]]   = -C->expc[i].v[3];
+        PKP->pr[P[C->expc[i].colstart[2]+1]] = -C->expc[i].v[4];
+        PKP->pr[P[C->expc[i].colstart[2]+2]] = -C->expc[i].v[5]-DELTAEXP;
+    }
+#endif
+
 }
 
 
