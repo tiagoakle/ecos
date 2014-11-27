@@ -13,7 +13,7 @@ randn(0);
 samples_per_size = 1;
 sizes            = [10:10:300];
 
-results = zeros(length(sizes)*samples_per_size,5);
+results = zeros(length(sizes)*samples_per_size,6);
 rix = 1;
 
 for size_ix = 1:length(sizes) 
@@ -123,8 +123,27 @@ for size_ix = 1:length(sizes)
         break;
     end
  
+   fprintf('Running with no centrality and potential\n');
+    %Run again with no centrality 
+    dims = struct;
+    dims.l = 0;
+    dims.q = 6*ones(cones,1);
+    dims.e = 2*cones;
+    opts   = struct;
+    opts.maxit = 300;
+    opts.feastol = 1.e-6;
+    opts.abstol  = 1.e-7;
+    opts.verbose = 1;
+    opts.centrality = 1e10;
+    opts.potential = true;
+    [x,y,info_mixed_no_cent_pot,s,z]=ecos(c,G,h,dims,A,b,opts);
+    if(info_mixed_no_cent_pot.exitflag ~= 1)
+        fprintf('Must have been primal infeasible');
+        break;
+    end
+ 
     %Prepare the exponential cone problem    
-    results(rix,:) = [cones*8,cones*12,socp_info.iter,info_mixed.iter,info_mixed_no_cent.iter];
+    results(rix,:) = [cones*8,cones*12,socp_info.iter,info_mixed.iter,info_mixed_no_cent.iter,info_mixed_no_cent_pot.iter];
     rix = rix+1;
     end
 end

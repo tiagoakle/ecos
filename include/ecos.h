@@ -68,11 +68,11 @@
 #ifdef EXPCONE
 #define MAX_BK           (90)    /*Maximum backtracking steps*/
 #define BK_SCALE         (0.8)   /*Backtracking scaling*/
-#define CENTRALITY       (0.5)
+#define CENTRALITY       (1E10)
 #define MIN_DISTANCE     (0.1)   /* dont let sqrt(r), sqrt(-u) or sqrt(v)
                                    become smaller than
                                   MIN_DISTANCE*expmu*/
-#define POTENTIAL        (0)  /* Use the potential function while backtracking*/
+#define POTENTIAL        (1)  /* Use the potential function while backtracking*/
 #endif
  
 /* EQUILIBRATION METHOD ------------------------------------------------ */
