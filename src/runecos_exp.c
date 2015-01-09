@@ -1,7 +1,7 @@
 /*
  * ECOS - Embedded Conic Solver.
- * Copyright (C) 2012-2015 A. Domahidi [domahidi@embotech.com],
- * Automatic Control Lab, ETH Zurich & embotech GmbH, Zurich, Switzerland.
+ * Copyright (C) 2012-14 Alexander Domahidi [domahidi@control.ee.ethz.ch],
+ * Automatic Control Laboratory, ETH Zurich.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,11 +25,34 @@
 #include "ecos.h"
 #include "data.h"
 
+#ifdef EXPCONE
 int main(void)
 {
-	/*char ver[7];*/
+
+    //Modify the problem to add an exponential cone
+    //the original problem has socps of size 3,3,3,3,3,4.
+    //Make it 3,3,3,4 and an exponential cone
+//    ncones = 3;
+//    q[2] = 4;
+//    idxint nexc = 3;
+
+//idxint nexc = 1;
+//q[4] = 4;
+//ncones = 5;
+
+    idxint nexc = 0;
+    l = l+1;
+    //ncones = 5;
+    ncones = 0;
+    //q[4]   = 4;
+    nexc   = 6;
+//     idxint nexc = 0;
+/*char ver[7];*/
+
     idxint exitflag = ECOS_FATAL;
 	pwork* mywork;
+   
+
 #if PROFILING > 0
 	double ttotal, tsolve, tsetup;
 #endif
@@ -38,19 +61,11 @@ int main(void)
 #endif
 	
 	/* set up data */	
-#ifdef EXPCONE
-	mywork = ECOS_setup(n, m, p, l, ncones, q, 0, Gpr, Gjc, Gir, Apr, Ajc, Air, c, h, b);
-#else
-	mywork = ECOS_setup(n, m, p, l, ncones, q, Gpr, Gjc, Gir, Apr, Ajc, Air, c, h, b);
-#endif
- 
+	mywork = ECOS_setup(n, m, p, l, ncones, q, nexc, Gpr, Gjc, Gir, Apr, Ajc, Air, c, h, b);
     if( mywork != NULL ){
 	
 	/* solve */	
 	exitflag = ECOS_solve(mywork);
-    
-    /* test second solve
-    exitflag = ECOS_solve(mywork); */
 
 	/* some statistics in milliseconds */
 #if PROFILING > 0
@@ -102,3 +117,11 @@ int main(void)
     /* explicitly truncate exit code */
 	return (int)exitflag;
 }
+
+#else
+
+int main(void)
+{
+	printf("Compile with EXPCONE to run this example\n");
+} 
+#endif

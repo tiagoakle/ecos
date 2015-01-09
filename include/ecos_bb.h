@@ -142,6 +142,9 @@ typedef struct ecos_bb_pwork{
 ecos_bb_pwork* ECOS_BB_setup(
     idxint n, idxint m, idxint p,
     idxint l, idxint ncones, idxint* q,
+#ifdef EXPCONE 
+    idxint nex,
+#endif
     pfloat* Gpr, idxint* Gjc, idxint* Gir,
     pfloat* Apr, idxint* Ajc, idxint* Air,
     pfloat* c, pfloat* h, pfloat* b,

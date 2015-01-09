@@ -27,7 +27,7 @@
 typedef double pfloat;              /* for numerical values  */
 
 /* SET PRINT LEVEL ----------------------------------------------------- */
-#define PRINTLEVEL (2)     /* 0: no prints					             */
+#define PRINTLEVEL (3)     /* 0: no prints					             */
 						   /* 1: only final info				         */
                            /* 2: progress print per iteration            */
 						   /* 3: debug level, enables print & dump fcns. */
@@ -39,7 +39,7 @@ typedef double pfloat;              /* for numerical values  */
                             /* problems.                                 */
 
 /* SET PROFILING LEVEL ------------------------------------------------- */
-#define PROFILING (1)      /* 0: no timing information				     */
+#define PROFILING (2)      /* 0: no timing information				     */
                            /* 1: runtime (divided in setup and solve)    */
                            /* 2: detailed profiling                      */
 
@@ -52,6 +52,9 @@ typedef double pfloat;              /* for numerical values  */
 #ifndef NAN
 #define NAN ((double)0x7ff8000000000000)
 #endif
+
+/* Exponential cone */
+#define EXPCONE       /*When defined the exponential cone solver code is enabled*/
 
 /* SYSTEM INCLUDES FOR PRINTING ---------------------------------------- */
 #if PRINTLEVEL > 0

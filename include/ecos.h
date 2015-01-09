@@ -61,6 +61,16 @@
 #define STEPMAX    (0.999)  /* largest step allowed, also in affine dir. */
 #define SAFEGUARD  (500)         /* Maximum increase in PRES before
                                                 ECOS_NUMERICS is thrown. */
+/*Ecos exponential cone default settings*/
+#ifdef EXPCONE
+#define MAX_BK           (90)    /*Maximum backtracking steps*/
+#define BK_SCALE         (0.8)   /*Backtracking constant*/
+#define CENTRALITY       (0.5)   /*Centrality requirement*/
+#define MIN_DISTANCE     (0.1)   /* dont let sqrt(r), sqrt(-u) or sqrt(v)
+                                   become smaller than
+                                  MIN_DISTANCE*expmu*/
+#define POTENTIAL        (1)     /* Use the potential function while backtracking*/
+#endif
 
 /* EQUILIBRATION METHOD ------------------------------------------------ */
 #define EQUILIBRATE (1)     /* use equlibration of data matrices? >0: yes */
@@ -98,6 +108,12 @@ typedef struct settings{
 	idxint nitref;				 /* number of iterative refinement steps */
 	idxint maxit;                /* maximum number of iterations         */
     idxint verbose;              /* verbosity bool for PRINTLEVEL < 3    */
+#ifdef EXPCONE /*Exponential cone settings*/
+    idxint max_bk_iter;      /* Maximum backtracking iterations */
+    pfloat bk_scale;         /* Backtracking scaling */
+    pfloat centrality;       /* Centrality */
+    idxint potential;        /* Flag to indicate if we use the potential function */
+#endif
 } settings;
 
 
@@ -136,7 +152,24 @@ typedef struct stats{
     pfloat tfactor_t1;
     pfloat tfactor_t2;
 #endif
+#ifdef EXPCONE
+    pfloat expmu; /* complementarity for exponential vars*/
 
+    idxint affPob; /*Backtracking counters for the affine search*/
+    idxint affCb;
+    idxint affCob;
+    idxint affPb; 
+    idxint affDb;
+    idxint affBack; /*Total affine backtracking steps*/
+
+    idxint cmbPob; /*Backtracking counters of the combined search*/
+    idxint cmbCb;
+    idxint cmbCob;
+    idxint cmbPb; 
+    idxint cmbDb;
+    idxint cmbBack; /*Total combined backtracking steps*/ 
+    pfloat centrality;
+#endif   
 } stats;
 
 
@@ -223,10 +256,19 @@ typedef struct pwork{
 
 /* set up work space */
 /* could be done by codegen */
+#ifdef EXPCONE /*Add the parameter nex for the number of exponential cones*/
+pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint* q, idxint nex,
+#else
 pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint* q,
+#endif
                    pfloat* Gpr, idxint* Gjc, idxint* Gir,
                    pfloat* Apr, idxint* Ajc, idxint* Air,
                    pfloat* c, pfloat* h, pfloat* b);
+
+
+#ifdef EXPCONE
+pfloat expConeLineSearch(pwork* w, idxint affine);
+#endif
 
 
 /* solve */

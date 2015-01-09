@@ -135,6 +135,9 @@ void socp_to_ecos_bb(
 ecos_bb_pwork* ECOS_BB_setup(
     idxint n, idxint m, idxint p,
     idxint l, idxint ncones, idxint* q,
+#if defined EXPCONE
+    idxint nex,
+#endif
     pfloat* Gpr, idxint* Gjc, idxint* Gir,
     pfloat* Apr, idxint* Ajc, idxint* Air,
     pfloat* c, pfloat* h, pfloat* b,
@@ -220,6 +223,9 @@ ecos_bb_pwork* ECOS_BB_setup(
     /* Setup the ecos solver*/
     prob->ecos_prob = ECOS_setup(
         n, m, p, l, ncones, q,
+#if defined EXPCONE
+        nex,
+#endif
         prob->Gpr_new, prob->Gjc_new, prob->Gir_new,
         Apr, Ajc, Air,
         c, prob->h_new, b);
