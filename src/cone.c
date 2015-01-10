@@ -344,7 +344,7 @@ void scale2add(pfloat *x, pfloat* y, cone* C)
     }
 #endif
 #ifdef EXPCONE
-    scaleToAddExpcone(y1,x1,C->expc,C->nexc,cone_start);
+    scaleToAddExpcone(y,x,C->expc,C->nexc,cone_start);
 #endif
 }
 
