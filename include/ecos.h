@@ -65,7 +65,7 @@
 #ifdef EXPCONE
 #define MAX_BK           (90)    /*Maximum backtracking steps*/
 #define BK_SCALE         (0.8)   /*Backtracking constant*/
-#define CENTRALITY       (0.5)   /*Centrality requirement*/
+#define CENTRALITY       (1E100)   /*Centrality requirement*/
 #define MIN_DISTANCE     (0.1)   /* dont let sqrt(r), sqrt(-u) or sqrt(v)
                                    become smaller than
                                   MIN_DISTANCE*expmu*/
@@ -154,21 +154,17 @@ typedef struct stats{
 #endif
 #ifdef EXPCONE
     pfloat expmu; /* complementarity for exponential vars*/
-
-    idxint affPob; /*Backtracking counters for the affine search*/
-    idxint affCb;
-    idxint affCob;
-    idxint affPb; 
-    idxint affDb;
+    //Counters for backtracking, each of these counts 
+    //one condition that can fail and cause a backtrack
+    idxint pob; //Potential decreases
+    idxint cb; //Centrality violations
+    idxint cob; //The s'z of one cone is too small w.r.t. mu
+    idxint pb; //Primal infeasibility
+    idxint db; //Dual infeasibility 
     idxint affBack; /*Total affine backtracking steps*/
-
-    idxint cmbPob; /*Backtracking counters of the combined search*/
-    idxint cmbCb;
-    idxint cmbCob;
-    idxint cmbPb; 
-    idxint cmbDb;
     idxint cmbBack; /*Total combined backtracking steps*/ 
-    pfloat centrality;
+
+    pfloat centrality; /*Centrality at the end of the backtracking*/
 #endif   
 } stats;
 

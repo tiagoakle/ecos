@@ -768,25 +768,20 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
     idxint* cob;
     idxint* pb; 
     idxint* db;    
-
+    
     if(affine ==1)
     {
         alpha = w->info->step_aff;
-        pob = &w->info->affPob;
-        cb  = &w->info->affCb;
-        cob = &w->info->affCob;
-        pb  = &w->info->affPb;   
-        db  = &w->info->affDb;
     }
     else //Combined 
     {
-        alpha = w->info->step;
-        pob = &w->info->cmbPob;
-        cb  = &w->info->cmbCb;
-        cob = &w->info->cmbCob;
-        pb  = &w->info->cmbPb;   
-        db  = &w->info->cmbDb;
+        alpha = w->info->step; 
     }
+    pob = &w->info->pob;
+    cb  = &w->info->cb;  
+    cob = &w->info->cob;
+    pb  = &w->info->pb;    
+    db  = &w->info->db;  
 
     //Initialize the counters
     *pob = 0;  
@@ -797,6 +792,7 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
 
     //Initialize the other statistics 
     pfloat* centrality = &w->info->centrality;
+    pfloat barrier = 0.0; //Variable to hold the value of f_e(s_e)+f^\star_e(z_e)
     *(centrality) = 1e300; //Placeholder 
 
     //Start of the actual linesearch 
@@ -847,13 +843,14 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
                 //If all the mui are larger than MIN_DISTANCE*exmpu then j == m
                 if(j==w->m)
                 {  
-                        *centrality = evaluate_functional_centrality(ws, wz, w->C->fexv, expmu, w->C->nexc);
+                        barrier = evalBarrierValue(ws,wz, w->C->fexv, w->C->nexc);
+                        *centrality = barrier+3*w->C->nexc*log(expmu)+3*w->C->nexc;
+                        //*centrality = evaluate_functional_centrality(ws, wz, w->C->fexv, expmu, w->C->nexc);
                         if(*centrality<w->stgs->centrality)
                         {
                            if(affine==0&w->stgs->potential == 1)  //Reduce the potential on the combined steps
                            {
-                                 pfloat canonical_sigma = w->C->nexc*3/(w->C->nexc*3+sqrt(w->C->nexc*3));
-                                 potential = evaluate_potential_function(ws, wz, w->C->fexv, expmu, canonical_sigma, w->C->nexc);
+                                 potential = barrier + (w->C->nexc*3+sqrt(w->C->nexc*3))*log(expmu)+3*w->C->nexc;
                                  if(potential < min_potential) 
                                  {
                                     min_potential       = potential;
@@ -1058,7 +1055,7 @@ idxint ECOS_solve(pwork* w)
 	idxint exitcode = ECOS_FATAL, interrupted = 0;
 
 #ifdef EXPCONE
-        idxint fc = w->m-3*w->C->nexc; //First cone variable 
+        idxint fc = w->C->fexv; //First cone variable 
         idxint k;
 #endif
 
@@ -1347,8 +1344,7 @@ idxint ECOS_solve(pwork* w)
             w->dsaff_by_W[i] = 0.0;
         }
 
-        scaleToAddExpcone(w->dsaff_by_W+fc,w->W_times_dzaff+fc,w->C); 
-        
+        scaleToAddExpcone(w->dsaff_by_W,w->W_times_dzaff,w->C->expc, w->C->nexc, fc);  
         
         //Add -s 
         for(i=fc; i<w->m; i++)
@@ -1368,19 +1364,19 @@ idxint ECOS_solve(pwork* w)
             w->info->step_aff = expConeLineSearch(w,1);
             //Sum all the backtracking steps 
             //Sum the backtracking counts 
-            w->info->affBack+= w->info->affPob;
-            w->info->affBack+=w->info->affCb;
-            w->info->affBack+= w->info->affCob;
-            w->info->affBack+=w->info->affPb;
-            w->info->affBack+=w->info->affDb;
+            w->info->affBack+= w->info->pob;
+            w->info->affBack+=w->info->cb;
+            w->info->affBack+= w->info->cob;
+            w->info->affBack+=w->info->pb;
+            w->info->affBack+=w->info->db;
 
 #if PRINTLEVEL > 2 
-           PRINTTEXT("Affine backtracking %d %d %d %d %d %d \n",\
-           (int)w->info->affPob,\
-           (int)w->info->affCb,\
-           (int)w->info->affCob,\
-           (int)w->info->affPb,\
-           (int)w->info->affDb);
+           PRINTTEXT("Affine backtracking %d %d %d %d %d \n",\
+           (int)w->info->pob,\
+           (int)w->info->cb,\
+           (int)w->info->cob,\
+           (int)w->info->pb,\
+           (int)w->info->db);
 #endif
             //Detect linesearch failure, recover and end.
             if(w->info->step_aff == -1)
@@ -1447,7 +1443,7 @@ idxint ECOS_solve(pwork* w)
             w->dsaff_by_W[i] = 0.0;
         } 
         //Calculate muH(s)dzaff and store in dsaff_by_W
-        scaleToAddExpcone(w->dsaff_by_W+fc,w->KKT->dz2+fc,w->C);
+        scaleToAddExpcone(w->dsaff_by_W,w->KKT->dz2,w->C->expc,w->C->nexc,fc);
         //We have modified g to contain s+sigma*expmu*g(z)+(1-sigma)*second_order
         k = fc;
         for(i=0;i<w->C->nexc;i++)
@@ -1468,19 +1464,19 @@ idxint ECOS_solve(pwork* w)
     {
         w->info->step = expConeLineSearch(w,0);
         //Sum the backtracking counts 
-        w->info->cmbBack+= w->info->cmbPob;
-        w->info->cmbBack+=w->info->cmbCb;
-        w->info->cmbBack+= w->info->cmbCob;
-        w->info->cmbBack+=w->info->cmbPb;
-        w->info->cmbBack+=w->info->cmbDb;
+        w->info->cmbBack+= w->info->pob;
+        w->info->cmbBack+= w->info->cb;
+        w->info->cmbBack+= w->info->cob;
+        w->info->cmbBack+= w->info->pb;
+        w->info->cmbBack+= w->info->db;
 
 #if PRINTLEVEL > 2
         PRINTTEXT("Combined backtracking %d %d %d %d %d \n",\
-        (int)w->info->cmbPob,\
-        (int)w->info->cmbCb,\
-        (int)w->info->cmbCob,\
-        (int)w->info->cmbPb,\
-        (int)w->info->cmbDb);
+        (int)w->info->pob,\
+        (int)w->info->cb,\
+        (int)w->info->cob,\
+        (int)w->info->pb,\
+        (int)w->info->db);
 #endif
  
          //Detect linesearch failure, recover and end.
@@ -1489,11 +1485,11 @@ idxint ECOS_solve(pwork* w)
 
 #if PRINTLEVEL > 1
             PRINTTEXT("Combined backtracking failed %d %d %d %d %d sigma %g\n",\
-            (int)w->info->cmbPob,\
-            (int)w->info->cmbCb,\
-            (int)w->info->cmbCob,\
-            (int)w->info->cmbPb,\
-            (int)w->info->cmbDb,\
+            (int)w->info->pob,\
+            (int)w->info->cb,\
+            (int)w->info->cob,\
+            (int)w->info->pb,\
+            (int)w->info->db,\
             sigma);
 
             if( w->stgs->verbose ) PRINTTEXT("Combined line search failed, recovering best iterate (%d) and stopping.\n", (int)w->best_info->iter);

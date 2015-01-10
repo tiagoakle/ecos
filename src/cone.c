@@ -22,7 +22,7 @@
 #include "cone.h"
 #include "spla.h"
 #include "ecos.h"
-#include "wright_omega.h"
+#include "expcone.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,105 +40,6 @@ pfloat socres(pfloat* u, idxint p)
 	for( i=1; i<p; i++) { res -= u[i]*u[i]; }
 	return res;
 }
-
-#ifdef EXPCONE
-/* Evaluates the Hessian of the exponential dual cone barrier at the triplet 
- * w[0],w[1],w[2], and stores the upper triangular part of the matrix mu*H(w)
- * at v[0],...,v[5] where the entries are arranged columnwise
- */
-void evalExpHessian(pfloat* w, pfloat* v, pfloat mu)
-{      
-
-      //  l = log(-y/x);
-      //  r = -x*l-x+w;
-      //  He = [[ 1/x^2 - 1/(r*x) + l^2/r^2,           1/(r*y) + (l*x)/(r^2*y),     -l/r^2];
-      //       [   1/(r*y) + (l*x)/(r^2*y), 1/y^2 - x/(r*y^2) + x^2/(r^2*y^2), -x/(r^2*y)];
-      //       [                    -l/r^2,                        -x/(r^2*y),      1/r^2]];
-        
-        pfloat x     = w[0]/sqrt(mu);
-        pfloat y     = w[1]/sqrt(mu);
-        pfloat z     = w[2]/sqrt(mu);
-        pfloat l     = log(-y/x);
-        pfloat r     = -x*l-x+z; 
-        v[0]         = ((r*r-x*r+l*l*x*x)/(r*x*x*r));
-        v[1]         = ((z-x)/(r*r*y));
-        v[2]         = ((r*r-x*r+x*x)/(r*r*y*y));
-        v[3]         = (-l/(r*r));
-        v[4]         = (-x/(r*r*y));
-        v[5]         = (1/(r*r));
-}
-
-
-
-/* Evaluates the gradient of the exponential cone g(z) at the triplet 
- * w[0],w[1],w[2], and stores the result at g[0],..,g[2]
- */
-void evalExpGradient(pfloat* w, pfloat* g)
-{
-        pfloat x     = w[0];
-        pfloat y     = w[1];
-        pfloat z     = w[2];
-        pfloat l     = log(-y/x);
-        pfloat r     = -x*l-x+z; 
-
-        g[0]         = (l*x-r)/(r*x);
-        g[1]         = (x-r)/(y*r);
-        g[2]         = -1/r;
-}
-/*
- * Returns 1 if s is primal feasible
- * with respect to the exponential cone, 
- * and 0 i.o.c
- */
-idxint evalExpPrimalFeas(pfloat *s, idxint nexc)
-{
-        pfloat x1,x2,x3,tmp1,psi;
-
-        idxint j = 0;
-        for(j =0 ; j < nexc; j++)
-        {
-           x1 = s[3*j];
-           x2 = s[3*j+1];
-           x3 = s[3*j+2];
-           tmp1 = log(x2/x3);
-           psi   = x3*tmp1 - x1;
-           if(psi<0||x2<0||x3<0)
-           {
-                return 0;
-           }
-
-        }
-        return 1;
-
-}
-
-/*
- * Returns 1 if s is dual feasible
- * with respect to the dual of the exponential cone, 
- * and 0 i.o.c
- */
-idxint evalExpDualFeas(pfloat *z, idxint nexc)
-{
-    pfloat x1,x2,x3,tmp1,psi;
-
-        idxint j = 0;
-        for(j =0 ; j < nexc; j++)
-        {
-           x1 = z[3*j];
-           x2 = z[3*j+1];
-           x3 = z[3*j+2];
-           tmp1 = log(-x2/x1);
-           psi   = -x1-x1*tmp1+x3;
-           if(0<x1||x2<0||psi<0)
-           {
-                return 0;
-           }
-
-        }
-        return 1;
-}
-#endif
-
 
 
 /* PUBLIC METHODS ====================================================== */
@@ -209,7 +110,7 @@ void bring2cone(cone* C, pfloat* r, pfloat* s)
  * as this indicates severe problems.
  */
 #ifdef EXPCONE
-idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda, pfloat mu)
+idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda, pfloat expmu)
 #else
 idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda)
 #endif
@@ -291,9 +192,10 @@ idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda)
 	}
 #ifdef EXPCONE
        /*Exponential cones*/
+        k = C->fexv;
         for(l=0;l<C->nexc;l++)
         {
-            evalExpHessian(z+k, C->expc[l].v, mu);
+            evalExpHessian(z+k, C->expc[l].v, expmu);
             evalExpGradient(z+k, C->expc[l].g);
             k+=3;
         }
@@ -442,145 +344,10 @@ void scale2add(pfloat *x, pfloat* y, cone* C)
     }
 #endif
 #ifdef EXPCONE
-    x1 = x + cone_start;        
-    y1 = y + cone_start;  
-    scaleToAddExpcone(y1,x1,C);
+    scaleToAddExpcone(y1,x1,C->expc,C->nexc,cone_start);
 #endif
 }
 
-
-//Evaluate nu log (mu) + f(x) + f(s) + nu
-pfloat evaluate_functional_centrality(pfloat* siter, pfloat *ziter, idxint fc, pfloat mu, idxint nexc)
-{
-    ziter = ziter+fc;
-    siter = siter+fc;
-
-    pfloat l, u, v, w, x, y, z, o;
-
-    pfloat primal_barrier = 0.0;
-    pfloat dual_barrier   = 0.0;
-
-    idxint j;
-    //For the dual cone measure -u,v, -ul-u+w
-    //For the primal cone measure z,v,omega-1
-    //XXX
-    pfloat minargo = 1.e200;
-    pfloat relargo = 1.e200;
-    idxint minargix = 0;
-    for(j=0;j<nexc;j++)
-    {
-        //Extract the entries
-        u = ziter[0];
-        v = ziter[1];
-        w = ziter[2];
-
-        x = siter[0];
-        y = siter[1];
-        z = siter[2];
-
-        l = log(-v/u);
-        dual_barrier += -log(w-u-u*l)-log(-u)-log(v);
-        
-        //Primal Cone
-        if(-x/z-log(z)+log(y)<minargo){
-            minargo = -x/z-log(z)+log(y);
-            minargix = j;
-            relargo  = MAX(fabs(x/z),log(y/z))/minargo;
-        }
-        o = wrightOmega(1.0-x/z-log(z)+log(y)); 
-        o = (o-1)*(o-1)/o;
-        primal_barrier += -log(o)-2*log(z)-log(y)-3;
-        
-        ziter += 3;
-        siter += 3;
-
-    }
-    pfloat comp_potential = 3*nexc*log(mu);
-    pfloat potential = comp_potential+primal_barrier+dual_barrier+3*nexc;
- #if PRINTLEVEL >2
-    printf("Centrality comp %e, pbarr %e, dbarr %e cent %e minargo %e minargix %i relargo %g \n",\
-    comp_potential,primal_barrier,dual_barrier,potential,minargo,minargix,relargo);
- #endif
-    return potential;
-}
-
-//Evaluate rho log (mu) + f(x) + f(s) + nu where rho = nu/sigma
-pfloat evaluate_potential_function(pfloat* siter, pfloat *ziter, idxint fc, pfloat mu, pfloat sigma, idxint nexc)
-{
-    ziter = ziter+fc;
-    siter = siter+fc;
-
-    pfloat l, u, v, w, x, y, z, o;
-
-    pfloat primal_barrier = 0.0;
-    pfloat dual_barrier   = 0.0;
-
-    idxint j;
-    //For the dual cone measure -u,v, -ul-u+w
-    //For the primal cone measure z,v,omega-1
-    for(j=0;j<nexc;j++)
-    {
-        //Extract the entries
-        u = ziter[0];
-        v = ziter[1];
-        w = ziter[2];
-
-        x = siter[0];
-        y = siter[1];
-        z = siter[2];
-
-        l = log(-v/u);
-        dual_barrier += -log(w-u-u*l)-log(-u)-log(v);
-        
-        //Primal Cone
-        o = wrightOmega(1-x/z-log(z)+log(y)); 
-        o = (o-1)*(o-1)/o;
-        primal_barrier += -log(o)-2*log(z)-log(y)-3;
-        
-        ziter += 3;
-        siter += 3;
-
-    }
-   // pfloat potential = 0.0;
-   // if(sigma>1.e-5)
-   // {
-   //     potential = 3*nexc*log(mu)/sigma+primal_barrier+dual_barrier+3*nexc;
-   // }
-   // else
-   // {
-   //     potential = 3*nexc*log(mu);
-   // }
-    //PRINTTEXT("Potential values: Pot: %e Primal %e Dual %e\n",potential, primal_barrier, dual_barrier);
-    pfloat potential = 3*nexc*log(mu)+sigma*primal_barrier+sigma*dual_barrier+sigma*3*nexc;
-    return potential;
-}
-
-#ifdef EXPCONE
-/* Computes 
- * y += muH(x)*x;
- * Where x is the first exponential cone variable.
- * This method assumes that the scalings have been updated by update scalings
- * and that C->expc[cone_number].v contains mu*H(x)
- */
-void scaleToAddExpcone(pfloat* y, pfloat* x, cone* C)
-{
-    idxint l;
-    
-    for( l=0; l < C->nexc; l++ ){
-              
-        y[0]+= C->expc[l].v[0]*x[0]+C->expc[l].v[1]*x[1]+C->expc[l].v[3]*x[2];
-        y[1]+= C->expc[l].v[1]*x[0]+C->expc[l].v[2]*x[1]+C->expc[l].v[4]*x[2];         
-        y[2]+= C->expc[l].v[3]*x[0]+C->expc[l].v[4]*x[1]+C->expc[l].v[5]*x[2];
-
-        /* prepare index for next cone */
-        x += 3;
-        y += 3;
-    
-    }
-
-
-}
-#endif
 /**
  * Fast left-division by scaling matrix.
  * Returns z = W\lambda

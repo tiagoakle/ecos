@@ -23,6 +23,7 @@
 #define __CONE_H__
 
 #include "glblopts.h"
+#include "expcone.h"
 
 #define CONEMODE (0)  /* 0: expand to sparse cones (ECOS standard)       */
                       /* 1: dense cones (slow for big cones)             */
@@ -66,23 +67,6 @@ typedef struct socone{
     
 } socone;
 
-#ifdef EXPCONE
-/* EXPONENTIAL CONE ---------------------------------------------------- 
- * We save the index at which the columns of
- * the hesssian start on the csr format for each cone
- * We also allocate space for the gradient of the barrier at each cone
- * and the values of the Hessian
- * */
-typedef struct expcone
-{
-    idxint colstart[3]; //All cones are fixed size, we store the index
-                        // where the column of the hessian starts in the
-                        // permuted Newton system. 
-    pfloat v[6];       //Uper triangular section of the hessian
-    pfloat g[3];       //Gradient of the barrier
-} expcone;
-#endif
-
 /* GENERAL STRUCTURE FOR A CONE ---------------------------------------- */
 typedef struct cone{
 	lpcone* lpc;	    /* LP cone					    */
@@ -104,24 +88,6 @@ typedef struct cone{
 
 /* METHODS ------------------------------------------------------------- */
 
-#ifdef EXPCONE
-/* Evaluates the Hessian of the exponential dual cone barrier at the triplet 
- * w[0],w[1],w[2], and stores the upper triangular part of the matrix mu*H(w)
- * at v[0],...,v[5] where the entries are arranged columnwise
- */
-void evalExpHessian(pfloat* w, pfloat* v, pfloat mu);
-
-/* Evaluates the gradient of the exponential cone g(z) at the triplet 
- * w[0],w[1],w[2], and stores the result at g[0],..,g[2]
- */
-void evalExpGradient(pfloat* w, pfloat* g);
-
-//XXX add comment
-pfloat evaluate_potential_function(pfloat* siter, pfloat *ziter, idxint fc, pfloat mu, pfloat sigma, idxint nexc);
-//XXX add comment
-pfloat evaluate_functional_centrality(pfloat* siter, pfloat *ziter, idxint fc, pfloat mu, idxint nexc);
-#endif
-
 /**
  * Scales a conic variable such that it lies strictly in the cone.
  * If it is already in the cone, r is simply copied to s.
@@ -132,7 +98,6 @@ pfloat evaluate_functional_centrality(pfloat* siter, pfloat *ziter, idxint fc, p
  * are ignored.
  */
 void bring2cone(cone* C, pfloat* r, pfloat* s);
-
 
 /**
  * Update scalings.
@@ -161,22 +126,6 @@ void scale(pfloat* z, cone* C, pfloat* lambda);
  * Computes y += W^2*x;
  */
 void scale2add(pfloat *x, pfloat* y, cone* C);
-
-#ifdef EXPCONE
-/* 
- * Multiplies by y+=muH*x
- */
-void scaleToAddExpcone(pfloat* y, pfloat* x, cone* C);
-/*Returns 1 if s is primal feasible w.r.t the primal exponential
- * cone and 0 i.o.c */
-idxint evalExpPrimalFeas(pfloat *s, idxint nexc);
-/*Returns 1 if s is dual feasible w.r.t the dual exponential 
- * cone and 0 i.o.c*/
-idxint evalExpDualFeas(pfloat *s, idxint nexc);
-/* returns the minimum between -u,r,v across all exponential cones*/
-pfloat evalDistanceToBoundary(pfloat* s, pfloat* z, idxint nexc);
-#endif 
-
 
 /**
  * Fast left-division by scaling matrix.

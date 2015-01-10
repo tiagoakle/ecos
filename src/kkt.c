@@ -341,7 +341,7 @@ void kkt_update(spmat* PKP, idxint* P, cone *C)
         }
 #endif
 	}
-#ifdef EXPCONE
+#if defined EXPCONE
     /* Exponential cones */
     for( i=0; i < C->nexc; i++){ 
         PKP->pr[P[C->expc[i].colstart[0]]]   = -C->expc[i].v[0]-DELTASTAT;
