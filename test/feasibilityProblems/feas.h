@@ -20,6 +20,9 @@ static char * test_feas()
     /* set up data */
     mywork = ECOS_setup(1, 2, 0,
         2, 0, NULL,
+#if defined EXPCONE 
+                    0, 
+#endif
         feas_Gx, feas_Gp, feas_Gi,
         NULL, NULL, NULL,
         feas_c, feas_h, NULL);

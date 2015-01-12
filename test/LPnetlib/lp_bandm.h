@@ -25,6 +25,9 @@ printf("====================================== lp_bandm ========================
  
 /* set up data */
 mywork = ECOS_setup(lp_bandm_n, lp_bandm_m, lp_bandm_p, lp_bandm_l, lp_bandm_ncones, lp_bandm_q,
+#if defined EXPCONE 
+                    0, 
+#endif
                     lp_bandm_Gpr, lp_bandm_Gjc, lp_bandm_Gir,
                     lp_bandm_Apr, lp_bandm_Ajc, lp_bandm_Air,
                     lp_bandm_c, lp_bandm_h, lp_bandm_b);

@@ -22,9 +22,12 @@
 *~
 .DS_Store
 __.SYMDEF
+*.sw*
 
 ecostester
 runecos
+runecosexp
 python/build
 python/dist
 python/*.pyc
+debug_tools/*

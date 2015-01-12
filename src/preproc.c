@@ -533,6 +533,7 @@ void ECOS_cleanup(pwork* w, idxint keepvars)
  * Sets up all data structures needed.
  * Replace by codegen
  */
+
 #ifdef EXPCONE
 pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint* q, idxint nexc,
 #else

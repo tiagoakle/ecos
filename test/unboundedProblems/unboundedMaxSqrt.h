@@ -21,7 +21,11 @@ pwork *mywork;
 idxint exitflag;
  
 /* set up data */
-mywork = ECOS_setup(n, m, p, l, ncones, q, Gpr, Gjc, Gir, Apr, Ajc, Air, c, h, b);
+mywork = ECOS_setup(n, m, p, l, ncones, q, 
+#if defined EXPCONE
+                    0,
+#endif
+                    Gpr, Gjc, Gir, Apr, Ajc, Air, c, h, b);
 if( mywork != NULL ){
 /* solve */
 exitflag = ECOS_solve(mywork); }

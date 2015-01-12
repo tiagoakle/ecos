@@ -25,6 +25,9 @@ printf("======================================= lp_agg2 ========================
  
 /* set up data */
 mywork = ECOS_setup(lp_agg2_n, lp_agg2_m, lp_agg2_p, lp_agg2_l, lp_agg2_ncones, lp_agg2_q,
+#if defined EXPCONE 
+                    0, 
+#endif
                     lp_agg2_Gpr, lp_agg2_Gjc, lp_agg2_Gir,
                     lp_agg2_Apr, lp_agg2_Ajc, lp_agg2_Air,
                     lp_agg2_c, lp_agg2_h, lp_agg2_b);

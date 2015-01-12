@@ -25,6 +25,9 @@ printf("===================================== lp_beaconfd ======================
  
 /* set up data */
 mywork = ECOS_setup(lp_beaconfd_n, lp_beaconfd_m, lp_beaconfd_p, lp_beaconfd_l, lp_beaconfd_ncones, lp_beaconfd_q,
+#if defined EXPCONE 
+                    0, 
+#endif
                     lp_beaconfd_Gpr, lp_beaconfd_Gjc, lp_beaconfd_Gir,
                     lp_beaconfd_Apr, lp_beaconfd_Ajc, lp_beaconfd_Air,
                     lp_beaconfd_c, lp_beaconfd_h, lp_beaconfd_b);

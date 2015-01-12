@@ -52,7 +52,7 @@ ctrlc.o             : include/ctrlc.h include/glblopts.h include/cone.h include/
 timer.o             : include/timer.h include/glblopts.h include/cone.h include/ecos.h
 equil.o             : include/equil.h include/glblopts.h include/cone.h include/ecos.h
 expcone.o           : include/expcone.h  
-wright_omega.o      :include/wright_omega.h
+wright_omega.o      : include/wright_omega.h
 
 # ECOS demo
 .PHONY: demo
