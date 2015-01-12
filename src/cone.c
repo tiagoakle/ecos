@@ -93,9 +93,9 @@ void bring2cone(cone* C, pfloat* r, pfloat* s)
     /* Exponential cones just start at the central value*/
     for(l=0;l<C->nexc;l++)
     {
-       s[i]   = 100000*(-1.051383945322714);
-       s[i+1] = 100000*(1.258967884768947);
-       s[i+2] = 100000*(0.556409619469370);
+       s[i]   = 10*(-1.051383945322714);
+       s[i+1] = 10*(1.258967884768947);
+       s[i+2] = 10*(0.556409619469370);
        i=i+3;
     }
 #endif
