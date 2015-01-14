@@ -274,6 +274,20 @@ void use_ruiz_equilibration(pwork *w)
           ind += w->C->soc[i].p;
         }
 
+#ifdef EXPCONE 
+        /*Do the same for the exponential cones*/
+        for(i = 0; i < w->C->nexc; i++) {
+             total = 0.0;
+             for(j = 0; j < 3; j++) {
+               total += w->Gtmp[ind + j];
+             }
+             for(j = 0; j < 3; j++) {
+               Gtmp[ind + j] = total;
+             }
+             ind += 3;
+           }
+#endif
+
         /* take the sqrt */
         for(i = 0; i < num_cols; i++) {
           xtmp[i] = fabs(xtmp[i]) < 1e-6 ? 1.0 : sqrt(xtmp[i]);
