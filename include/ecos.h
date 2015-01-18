@@ -65,7 +65,7 @@
 #ifdef EXPCONE
 #define MAX_BK           (90)    /*Maximum backtracking steps*/
 #define BK_SCALE         (0.8)   /*Backtracking constant*/
-#define CENTRALITY       (1E100)   /*Centrality requirement*/
+#define CENTRALITY       (1e10)     /*Centrality requirement*/
 #define MIN_DISTANCE     (0.1)   /* dont let sqrt(r), sqrt(-u) or sqrt(v)
                                    become smaller than
                                   MIN_DISTANCE*expmu*/
@@ -265,7 +265,7 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
 
 
 #ifdef EXPCONE
-pfloat expConeLineSearch(pwork* w, idxint affine);
+pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine);
 #endif
 
 

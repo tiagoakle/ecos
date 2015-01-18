@@ -99,6 +99,10 @@ typedef struct cone{
  */
 void bring2cone(cone* C, pfloat* r, pfloat* s);
 
+#ifdef EXPCONE
+void bring2ExponentialCone(cone* C, pfloat* s, pfloat *z, idxint D);
+#endif
+
 /**
  * Update scalings.
  * Returns OUTSIDE_CONE as soon as any multiplier or slack leaves the cone,

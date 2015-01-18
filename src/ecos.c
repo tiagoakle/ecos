@@ -405,8 +405,14 @@ idxint init(pwork* w)
 	/* Bring variable to cone */
 	bring2cone(w->C, w->KKT->dz2, w->z );
 
+#ifdef EXPCONE
+    /* At this point the symmetric variables are set so initialize 
+     * the exponential variables */
+    bring2ExponentialCone(w->C, w->s, w->z, w->D);
+#endif	
 	/* Prepare RHS1 - before this line RHS1 = [0; b; h], after it holds [-c; b; h] */
 	for( i=0; i<w->n; i++){ w->KKT->RHS1[Pinv[i]] = -w->c[i]; }
+
 
 	/*
 	 * other variables
@@ -422,12 +428,15 @@ idxint init(pwork* w)
 //Scale the initial exponential cone slacks so they are centered
 #ifdef EXPCONE 
    /* Calculate the initial mu and expmu*/
-    w->info->mu = 0;
-    w->info->expmu = 0;
+    w->info->mu = 0.0;
+    w->info->expmu = 0.0;
+    //XXX:
+    pfloat symmu = 0.0;
     for(i=0;i<w->C->fexv;i++)
     {
         w->info->mu += w->s[i]*w->z[i];
     }
+    symmu = w->info->mu;
     for(;i<w->m;i++)
     {
         w->info->expmu += w->s[i]*w->z[i];
@@ -436,6 +445,15 @@ idxint init(pwork* w)
     w->info->mu += w->tau*w->kap;
     w->info->mu = w->info->mu/(w->D+1);
     w->info->expmu = w->info->expmu/(3.0*w->C->nexc);
+    
+    //XXX: Initial centrality 
+    symmu = symmu + w->tau*w->kap;
+    symmu = symmu/(w->D+1-3.0*w->C->nexc);
+    pfloat ini_cent = 3.0*w->C->nexc*log(w->info->expmu) + evalBarrierValue(w->s, w->z, w->C->fexv, w->C->nexc)+3*w->C->nexc;
+
+    pfloat ini_cent_mu = 3.0*w->C->nexc*log(w->info->mu) + evalBarrierValue(w->s, w->z, w->C->fexv, w->C->nexc)+3*w->C->nexc;
+    PRINTTEXT("=== Initial centrality %3.3e ini cent mu %3.3e initial mu %3.3e initial expmu %3.3e initial symmu %3.3e\n",
+               ini_cent,ini_cent_mu,w->info->mu, w->info->expmu, symmu);
 #endif 
 
 
@@ -747,15 +765,20 @@ void RHS_combined(pwork* w)
  * When affine = 1 it starts from alpha=w->info->step_aff
  * when affine = 0 it starts from alpha=w->info->step
 */
-pfloat expConeLineSearch(pwork* w, idxint affine)
+pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
 {
     //Iterates and workspace 
     pfloat* ws = w->KKT->work1;
     pfloat* wz = w->KKT->work2;
     pfloat* s  = w->s;
     pfloat* z  = w->z;
-    pfloat* ds = w->dsaff_by_W;
-    pfloat* dz = w->W_times_dzaff;
+    pfloat* ds = w->dsaff;
+    pfloat* dz = w->KKT->dz2;
+    pfloat tau = w->tau;
+    pfloat kap = w->kap;
+   // pfloat* ds = w->dsaff_by_W;
+   // pfloat* dz = w->W_times_dzaff;
+    
     //Settings
     pfloat gamma = w->stgs->gamma;
 
@@ -764,7 +787,7 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
     pfloat min_potential,min_potential_alpha;
     pfloat potential;
 
-    pfloat expmu, mui;      
+    pfloat expmu, mui, mu, compexp;
     
     //Initial alpha
     pfloat alpha;
@@ -811,16 +834,29 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
 
     for(bk_iter = 0;bk_iter<w->stgs->max_bk_iter;bk_iter++)
     {
-         
-         expmu = 0;
-         for(j=w->C->fexv;j<w->m;j++)
+         mu = 0.0;
+         compexp = 0.0;
+         expmu = 0.0;
+
+         for(j=0;j<w->C->fexv;j++)
+         {
+            ws[j] = s[j]+alpha*ds[j];
+            wz[j] = z[j]+alpha*dz[j];
+            mu += ws[j]*wz[j];
+         }
+         for(;j<w->m;j++)
          {
             ws[j] = s[j]+alpha*ds[j];
             wz[j] = z[j]+alpha*dz[j];
             expmu += ws[j]*wz[j];
          }
-         expmu = expmu/(3.0*w->C->nexc);
-            
+         mu += expmu;
+         //Tau and Kappa
+         mu = mu+(tau+alpha*dtau)*(kap+alpha*dkappa);
+         mu = mu/(w->D+1);
+         compexp = expmu;
+         expmu = expmu/(w->C->nexc*3.0);
+           
         //Evaluate the feasibility
         if(evalExpDualFeas(wz+w->C->fexv,w->C->nexc)==1)
         {
@@ -850,7 +886,14 @@ pfloat expConeLineSearch(pwork* w, idxint affine)
                 if(j==w->m)
                 {  
                         barrier = evalBarrierValue(ws,wz, w->C->fexv, w->C->nexc);
-                        *centrality = barrier+3*w->C->nexc*log(expmu)+3*w->C->nexc;
+                        //If one mu
+                        if(w->stgs->one_mu == 1) {
+                            *centrality = barrier+3*w->C->nexc*log(expmu)+3*w->C->nexc;
+                        }
+                        else
+                        {
+                            *centrality = barrier+3*w->C->nexc*log(mu)+3*w->C->nexc;
+                        }
                         //*centrality = evaluate_functional_centrality(ws, wz, w->C->fexv, expmu, w->C->nexc);
                         if(*centrality<w->stgs->centrality)
                         {
@@ -1243,7 +1286,7 @@ idxint ECOS_solve(pwork* w)
 		/* Compute scalings */
 #ifdef EXPCONE
         pfloat used_mu =  0.0;
-        if(w->stgs->one_mu ==1){used_mu = w->info->mu;}else{used_mu = w->info->expmu;}
+        if(w->stgs->one_mu == 1){used_mu = w->info->mu;}else{used_mu = w->info->expmu;}
 		if( updateScalings(w->C, w->s, w->z, w->lambda, used_mu) == OUTSIDE_CONE ){
 #else
 		if( updateScalings(w->C, w->s, w->z, w->lambda) == OUTSIDE_CONE ){
@@ -1346,18 +1389,24 @@ idxint ECOS_solve(pwork* w)
         // dsaff = -s - \mu H(z)dzaff
         //Calculate muH(s)dzaff and store in dsaff_by_W
        
+       //For the linesearch we need to compute x's+tk at every step size so 
+        //we need to calculate the search direction for the symmetric cones too
+
+        /* ds = W*ds_by_W */
+		scale(w->dsaff_by_W, w->C, w->dsaff);
+
         //Zero out
         for(i=fc; i<w->m; i++)
         { 
-            w->dsaff_by_W[i] = 0.0;
+            w->dsaff[i] = 0.0;
         }
 
-        scaleToAddExpcone(w->dsaff_by_W,w->W_times_dzaff,w->C->expc, w->C->nexc, fc);  
+        scaleToAddExpcone(w->dsaff,w->KKT->dz2, w->C->expc, w->C->nexc, fc);  
         
         //Add -s 
         for(i=fc; i<w->m; i++)
         { 
-            w->dsaff_by_W[i] = -w->dsaff_by_W[i]-w->s[i];
+            w->dsaff[i] = -w->dsaff[i]-w->s[i];
         }
         // Now dsaff_by_W has dsaff and W_times_dzaff dzaff
 
@@ -1369,7 +1418,7 @@ idxint ECOS_solve(pwork* w)
         w->info->affBack = 0;
         if(w->C->nexc>0)
             {
-            w->info->step_aff = expConeLineSearch(w,1);
+            w->info->step_aff = expConeLineSearch(w,dtauaff,dkapaff,1);
             //Sum all the backtracking steps 
             //Sum the backtracking counts 
             w->info->affBack+= w->info->pob;
@@ -1470,7 +1519,7 @@ idxint ECOS_solve(pwork* w)
     w->info->cmbBack = 0;
     if(w->C->nexc>0)
     {
-        w->info->step = expConeLineSearch(w,0);
+        w->info->step = expConeLineSearch(w,dtau,dkap,0);
         //Sum the backtracking counts 
         w->info->cmbBack+= w->info->pob;
         w->info->cmbBack+= w->info->cb;

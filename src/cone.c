@@ -89,18 +89,51 @@ void bring2cone(cone* C, pfloat* r, pfloat* s)
 		s[i] = r[i] + alpha; i++;
 		for( j=1; j < C->soc[l].p; j++ ){ s[i] = r[i]; i++; }
 	}
+}
+
 #ifdef EXPCONE
-    /* Exponential cones just start at the central value*/
+
+    //Initialize the exponential variables, must be called after 
+    //the symmetric variables are initialized. 
+    //The initial exponential values are set to gamma s_e, gamma z_e
+    //where gamma = sqrt((s_s^Tz_s+1)/(nu_s+1)) here s_s z_s are
+    //the symmetric variables and nu_s is the complexity of the symmetric 
+    //barriers. 
+    //The initial values for s_e and z_e are such that s_e+g(z_e) = 0
+void bring2ExponentialCone(cone* C, pfloat* s, pfloat *z, idxint D)
+{ 
+    /* Calculate the complexity of the symmetric cones*/
+    pfloat SymD = D-3*C->nexc+1;
+    /* Calculate the complementarity of the symmetric cones */
+    pfloat musym = 0.0;
+    idxint i = 0;
+    idxint l = 0;
+    idxint fexv = C->fexv;
+    for(;i<fexv;i++)
+    {
+        musym += s[i]*z[i];
+    }
+    musym += 1.0; //Add the initial tau*kappa 
+    musym = musym/SymD;
+    musym = sqrt(musym); 
+    musym = 10.0;
+    //XXX
+    PRINTTEXT("Scaling %3.3e \n",musym);
+    /* Set the exponential cone variables */
     for(l=0;l<C->nexc;l++)
     {
-       s[i]   = (-1.051383945322714);
-       s[i+1] = (1.258967884768947);
-       s[i+2] = (0.556409619469370);
+       s[i]   = musym*(-1.051383945322714);
+       s[i+1] = musym*(1.258967884768947);
+       s[i+2] = musym*(0.556409619469370);
+       z[i]   = musym*(-1.051383945322714);
+       z[i+1] = musym*(1.258967884768947);
+       z[i+2] = musym*(0.556409619469370);
        i=i+3;
     }
+}
 #endif
 
-}
+
 
 
 

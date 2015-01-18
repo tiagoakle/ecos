@@ -760,6 +760,7 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
     mywork->stgs->bk_scale    = BK_SCALE;
     mywork->stgs->centrality  = CENTRALITY;
     mywork->stgs->potential   = POTENTIAL;
+    mywork->stgs->one_mu      = ONEMU;
 #endif
 
 

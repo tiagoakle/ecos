@@ -282,7 +282,7 @@ void use_ruiz_equilibration(pwork *w)
                total += w->Gtmp[ind + j];
              }
              for(j = 0; j < 3; j++) {
-               Gtmp[ind + j] = total;
+               Gtmp[ind + j] = total/3.0;
              }
              ind += 3;
            }
