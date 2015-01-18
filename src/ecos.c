@@ -413,7 +413,6 @@ idxint init(pwork* w)
 	/* Prepare RHS1 - before this line RHS1 = [0; b; h], after it holds [-c; b; h] */
 	for( i=0; i<w->n; i++){ w->KKT->RHS1[Pinv[i]] = -w->c[i]; }
 
-
 	/*
 	 * other variables
 	 */
@@ -425,11 +424,11 @@ idxint init(pwork* w)
 	w->info->dinf = 0;
 	w->info->pinf = 0;
 
-//Scale the initial exponential cone slacks so they are centered
 #ifdef EXPCONE 
    /* Calculate the initial mu and expmu*/
     w->info->mu = 0.0;
     w->info->expmu = 0.0;
+
     //XXX:
     pfloat symmu = 0.0;
     for(i=0;i<w->C->fexv;i++)
@@ -1404,7 +1403,7 @@ idxint ECOS_solve(pwork* w)
         scaleToAddExpcone(w->dsaff,w->KKT->dz2, w->C->expc, w->C->nexc, fc);  
         
         //Add -s 
-        for(i=fc; i<w->m; i++)
+        for(i=0; i<w->m; i++)
         { 
             w->dsaff[i] = -w->dsaff[i]-w->s[i];
         }
