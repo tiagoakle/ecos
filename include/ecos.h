@@ -70,6 +70,7 @@
                                    become smaller than
                                   MIN_DISTANCE*expmu*/
 #define POTENTIAL        (1)     /* Use the potential function while backtracking*/
+#define ONEMU            (1)     /* Default to one mu*/
 #endif
 
 /* EQUILIBRATION METHOD ------------------------------------------------ */
@@ -113,6 +114,7 @@ typedef struct settings{
     pfloat bk_scale;         /* Backtracking scaling */
     pfloat centrality;       /* Centrality */
     idxint potential;        /* Flag to indicate if we use the potential function */
+    idxint one_mu;
 #endif
 } settings;
 

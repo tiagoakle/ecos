@@ -714,7 +714,13 @@ void RHS_combined(pwork* w)
 #ifdef EXPCONE
     pfloat* s   = w->s;
     k = w->C->fexv;
+//Check the settings and use the correct mu
+//TODO: Cleanup
     pfloat sigmaexpmu = w->info->sigma*w->info->expmu; 
+    if(w->stgs->one_mu==1)
+    {
+        sigmaexpmu = w->info->sigma*w->info->mu;
+    } 
     /*Exponential cones*/
     // -(1-sigma)*rz +s + expmu*sigma*g(x) 
     for(l=0;l<w->C->nexc;l++)
@@ -1236,7 +1242,9 @@ idxint ECOS_solve(pwork* w)
 
 		/* Compute scalings */
 #ifdef EXPCONE
-		if( updateScalings(w->C, w->s, w->z, w->lambda, w->info->expmu) == OUTSIDE_CONE ){
+        pfloat used_mu =  0.0;
+        if(w->stgs->one_mu ==1){used_mu = w->info->mu;}else{used_mu = w->info->expmu;}
+		if( updateScalings(w->C, w->s, w->z, w->lambda, used_mu) == OUTSIDE_CONE ){
 #else
 		if( updateScalings(w->C, w->s, w->z, w->lambda) == OUTSIDE_CONE ){
 #endif
