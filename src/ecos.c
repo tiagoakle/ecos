@@ -1374,8 +1374,8 @@ idxint ECOS_solve(pwork* w)
 		dtauaff = (w->rt - w->kap + eddot(w->n, w->c, w->KKT->dx2) + eddot(w->p, w->b, w->KKT->dy2) + eddot(w->m, w->h, w->KKT->dz2)) / dtau_denom;
 
 		/* dzaff = dz2 + dtau_aff*dz1 */
-		for( i=0; i<w->m; i++ ){ w->W_times_dzaff[i] = w->KKT->dz2[i] + dtauaff*w->KKT->dz1[i]; }
-		scale(w->W_times_dzaff, w->C, w->W_times_dzaff);
+		for( i=0; i<w->m; i++ ){ w->KKT->dz2[i] = w->KKT->dz2[i] + dtauaff*w->KKT->dz1[i]; }
+		scale(w->KKT->dz2, w->C, w->W_times_dzaff);
 
 		/* W\dsaff = -W*dzaff -lambda; */
 		for( i=0; i<w->m; i++ ){ w->dsaff_by_W[i] = -w->W_times_dzaff[i] - w->lambda[i]; }
@@ -1410,8 +1410,8 @@ idxint ECOS_solve(pwork* w)
 
         scaleToAddExpcone(w->dsaff,w->KKT->dz2, w->C->expc, w->C->nexc, fc);  
         
-        //Add -s 
-        for(i=0; i<w->m; i++)
+        //Add -s  ds = -s - muH(z)dz
+        for(i=fc; i<w->m; i++)
         { 
             w->dsaff[i] = -w->dsaff[i]-w->s[i];
         }
