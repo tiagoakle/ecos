@@ -1478,11 +1478,7 @@ idxint ECOS_solve(pwork* w)
 		/*  ds_by_W = -(lambda \ bs + conelp_timesW(scaling,dz,dims)); */
 		/* note that ath this point w->dsaff_by_W holds already (lambda \ ds) */
 		scale(w->KKT->dz2, w->C, w->W_times_dzaff);
-
-#ifdef EXPCONE
-        for( i=fc; i<w->m; i++){ w->W_times_dzaff[i] = w->KKT->dz2[i];} //Copy the exponential variables
-#endif
-
+       
 		for( i=0; i < w->m; i++ ){ w->dsaff_by_W[i] = -(w->dsaff_by_W[i] + w->W_times_dzaff[i]); }
 
 		/* dkap = -(bkap + kap*dtau)/tau; */
@@ -1490,29 +1486,32 @@ idxint ECOS_solve(pwork* w)
 
 		/* Line search on combined direction */
 		w->info->step = lineSearch(w->lambda, w->dsaff_by_W, w->W_times_dzaff, w->tau, dtau, w->kap, dkap, w->C, w->KKT) * w->stgs->gamma;
+        
+        //Bring ds to the final unscaled form
+        /* ds = W*ds_by_W */
+		scale(w->dsaff_by_W, w->C, w->dsaff);
 
 #ifdef EXPCONE
         
-        //Zero out
+        //Zero out the section corresponding to the exponential vars
         for(i=fc; i<w->m; i++)
         { 
-            w->dsaff_by_W[i] = 0.0;
+            w->dsaff[i] = 0.0;
         } 
-        //Calculate muH(s)dzaff and store in dsaff_by_W
-        scaleToAddExpcone(w->dsaff_by_W,w->KKT->dz2,w->C->expc,w->C->nexc,fc);
+        //Calculate muH(s)dzaff and store in dsaff
+        scaleToAddExpcone(w->dsaff,w->KKT->dz2,w->C->expc,w->C->nexc,fc);
+        
         //We have modified g to contain s+sigma*expmu*g(z)+(1-sigma)*second_order
         k = fc;
         for(i=0;i<w->C->nexc;i++)
         {
-            w->dsaff_by_W[k] = -w->dsaff_by_W[k] - w->C->expc[i].g[0];
+            w->dsaff[k] = -w->dsaff[k] - w->C->expc[i].g[0];
 			k++;
-            w->dsaff_by_W[k] = -w->dsaff_by_W[k] - w->C->expc[i].g[1];
+            w->dsaff[k] = -w->dsaff[k] - w->C->expc[i].g[1];
 			k++;
-            w->dsaff_by_W[k] = -w->dsaff_by_W[k] - w->C->expc[i].g[2];
+            w->dsaff[k] = -w->dsaff[k] - w->C->expc[i].g[2];
 			k++;
         }
-        // Now dsaff_by_W has dsaff         
-
 
     //Set the backtracking counter to zero
     w->info->cmbBack = 0;
@@ -1571,14 +1570,6 @@ idxint ECOS_solve(pwork* w)
 
 #endif //endif of EXPCONE
 
-
-
-		/* ds = W*ds_by_W */
-		scale(w->dsaff_by_W, w->C, w->dsaff);
-
-#ifdef EXPCONE
-        for(i=fc;i<w->m;i++) {w->dsaff[i] = w->dsaff_by_W[i];}
-#endif
 
 		/* Update variables */
 		for( i=0; i < w->n; i++ ){ w->x[i] += w->info->step * w->KKT->dx2[i]; }
