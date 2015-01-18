@@ -554,7 +554,7 @@ void updateStatistics(pwork* w)
 
 
 #if PRINTLEVEL > 2
-    PRINTTEXT("TAU=%6.4e  KAP=%6.4e  PINFRES=%6.4e  DINFRES=%6.4e\n",w->tau,w->kap,info->pinfres, info->dinfres );
+    PRINTTEXT("TAU=%6.4e  KAP=%6.4e  PINFRES=%6.4e HOMRES %6.4e, %6.4e DINFRES=%6.4e\n",w->tau,w->kap,info->pinfres,w->hresx, (-w->hz - w->by), info->dinfres );
 #endif
 
 }
@@ -898,6 +898,14 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                         {
                            if(affine==0&w->stgs->potential == 1)  //Reduce the potential on the combined steps
                            {
+                                if(w->stgs->one_mu == 1) {
+                                    potential = barrier+(w->C->nexc*3+sqrt(w->C->nexc*3))*log(mu)+3*w->C->nexc;
+                                }
+                                else
+                                {
+                                    potential = barrier+(w->C->nexc*3+sqrt(w->C->nexc*3))*log(expmu)+3*w->C->nexc;
+                                }
+        
                                  potential = barrier + (w->C->nexc*3+sqrt(w->C->nexc*3))*log(expmu)+3*w->C->nexc;
                                  if(potential < min_potential) 
                                  {

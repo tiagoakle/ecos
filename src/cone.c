@@ -116,7 +116,7 @@ void bring2ExponentialCone(cone* C, pfloat* s, pfloat *z, idxint D)
     musym += 1.0; //Add the initial tau*kappa 
     musym = musym/SymD;
     musym = sqrt(musym); 
-    //musym = 10.0;
+    musym = 1.0;
     //XXX
     PRINTTEXT("Scaling %3.3e \n",musym);
     /* Set the exponential cone variables */

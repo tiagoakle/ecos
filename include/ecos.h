@@ -70,7 +70,7 @@
                                    become smaller than
                                   MIN_DISTANCE*expmu*/
 #define POTENTIAL        (1)     /* Use the potential function while backtracking*/
-#define ONEMU            (1)     /* Default to one mu*/
+#define ONEMU            (0)     /* Default to one mu*/
 #endif
 
 /* EQUILIBRATION METHOD ------------------------------------------------ */
