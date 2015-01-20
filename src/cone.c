@@ -244,12 +244,11 @@ pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, p
    idxint j,k,l; 
    pfloat normAccumS = 0.0;   
    pfloat normAccumZ = 0.0;
-   pfloat* socCone;
-   idxint* socDim;
+   idxint socDim;
    //Positive orthant barrier
    for(k=0;k<C->lpc->p;k++)
         barrier += log(siter[k])+log(ziter[k]);
-    
+
     barrier+=log(tauIter)+log(kapIter);
     //Socp cones
     for(l=0;l<C->nsoc;l++)
@@ -268,6 +267,7 @@ pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, p
         barrier+=0.5*log(normAccumZ);
         k++;
     }
+    return barrier;
 }
 #endif
 
