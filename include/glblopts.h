@@ -55,7 +55,7 @@ typedef double pfloat;              /* for numerical values  */
 
 /* Exponential cone */
 #define EXPCONE       /*When defined the exponential cone solver code is enabled*/
-
+#define FULL_BARRIER
 /* SYSTEM INCLUDES FOR PRINTING ---------------------------------------- */
 #if PRINTLEVEL > 0
 #ifdef MATLAB_MEX_FILE

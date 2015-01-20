@@ -70,11 +70,11 @@
                                    become smaller than
                                   MIN_DISTANCE*expmu*/
 #define POTENTIAL        (1)     /* Use the potential function while backtracking*/
-#define ONEMU            (0)     /* Default to one mu*/
+#define ONEMU            (1)     /* Default to one mu*/
 #endif
 
 /* EQUILIBRATION METHOD ------------------------------------------------ */
-#define EQUILIBRATE (0)     /* use equlibration of data matrices? >0: yes */
+#define EQUILIBRATE (1)     /* use equlibration of data matrices? >0: yes */
 #define EQUIL_ITERS (3)         /* number of equilibration iterations  */
 #define RUIZ_EQUIL      /* define algorithm to use - if both are ... */
 /*#define ALTERNATING_EQUIL*/ /* ... commented out no equlibration is used */

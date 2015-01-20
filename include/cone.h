@@ -117,6 +117,9 @@ idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda, pfloat mu);
 idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda);
 #endif
 
+#ifdef EXPCONE
+pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, pfloat kapIter, cone* C);
+#endif
 
 /**
  * Fast multiplication by scaling matrix.
