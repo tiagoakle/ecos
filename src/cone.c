@@ -116,9 +116,6 @@ void bring2ExponentialCone(cone* C, pfloat* s, pfloat *z, idxint D)
     musym += 1.0; //Add the initial tau*kappa 
     musym = musym/SymD;
     musym = sqrt(musym); 
-    musym = 1.0;
-    //XXX
-    PRINTTEXT("Scaling %3.3e \n",musym);
     /* Set the exponential cone variables */
     for(l=0;l<C->nexc;l++)
     {
@@ -239,6 +236,40 @@ idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda)
 	return INSIDE_CONE;
 }
 
+#ifdef EXPCONE
+//Evaulates log(s) + log(z) + log(t) + log(k) + logbarriersocp
+pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, pfloat kapIter, cone* C)
+{
+   pfloat barrier = 0.0;
+   idxint j,k,l; 
+   pfloat normAccumS = 0.0;   
+   pfloat normAccumZ = 0.0;
+   pfloat* socCone;
+   idxint* socDim;
+   //Positive orthant barrier
+   for(k=0;k<C->lpc->p;k++)
+        barrier += log(siter[k])+log(ziter[k]);
+    
+    barrier+=log(tauIter)+log(kapIter);
+    //Socp cones
+    for(l=0;l<C->nsoc;l++)
+    {
+        socDim = C->soc[l].p;
+        normAccumS = siter[k]*siter[k]; //Root variable of the socp cone
+        normAccumZ = ziter[k]*ziter[k]; 
+        k++;
+        for(j=1;j<socDim;j++)
+        {
+            normAccumS -= siter[k]*siter[k];             
+            normAccumZ -= ziter[k]*ziter[k]; 
+            k++;
+        }
+        barrier+=0.5*log(normAccumS);        
+        barrier+=0.5*log(normAccumZ);
+        k++;
+    }
+}
+#endif
 
 /**
  * Fast multiplication by scaling matrix.

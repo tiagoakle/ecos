@@ -885,7 +885,10 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                 if(j==w->m)
                 {  
                         barrier = evalBarrierValue(ws,wz, w->C->fexv, w->C->nexc);
-                        //If one mu
+#ifdef FULL_BARRIER
+                        barrier+= evalSymmetricBarrierValue(ws, wz, tau+alpha*dtau, kap+alpha*dkappa, w->C);
+#endif
+                    //If one mu
                         if(w->stgs->one_mu == 1) {
                             *centrality = barrier+3*w->C->nexc*log(expmu)+3*w->C->nexc;
                         }
@@ -899,7 +902,11 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                            if(affine==0&w->stgs->potential == 1)  //Reduce the potential on the combined steps
                            {
                                 if(w->stgs->one_mu == 1) {
+#ifdef FULL_BARRIER
+                                    potential = barrier+(w->D+1+sqrt(w->D+1))*log(mu)+3*w->C->nexc;
+#else                                    
                                     potential = barrier+(w->C->nexc*3+sqrt(w->C->nexc*3))*log(mu)+3*w->C->nexc;
+#endif
                                 }
                                 else
                                 {
@@ -1088,7 +1095,7 @@ void backscale(pwork *w)
 	for( i=0; i < w->n; i++ ){ w->x[i] /= (w->xequil[i] * w->tau); }
     for( i=0; i < w->p; i++ ){ w->y[i] /= (w->Aequil[i] * w->tau); }
 	for( i=0; i < w->m; i++ ){ w->z[i] /= (w->Gequil[i] * w->tau); }
-	for( i=0; i < w->m; i++ ){ w->s[i] /= (w->Gequil[i] * w->tau); }
+	for( i=0; i < w->m; i++ ){ w->s[i] *= (w->Gequil[i] / w->tau); }
     for( i=0; i < w->n; i++ ){ w->c[i] *= w->xequil[i]; }
 #else
     /* standard back scaling without equilibration */

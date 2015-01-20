@@ -151,21 +151,6 @@ void use_alternating_norm_equilibration(pwork *w)
       ind += w->C->soc[i].p;
     }
 
-#ifdef EXPCONE 
-    /*Do the same for the exponential cones*/
- for(i = 0; i < w->C->nexc; i++) {
-      sum = 0.0;
-      for(j = 0; j < 3; j++) {
-        sum += w->Gequil[ind + j];
-      }
-      for(j = 0; j < 3; j++) {
-        w->Gequil[ind + j] = sum / 3.0;
-      }
-      ind += 3;
-    }
-#endif
-
-
     /* get the norm */
     for(i = 0; i < num_A_rows; i++) {
       w->Aequil[i] = fabs(w->Aequil[i]) < 1e-6 ? 1.0 : sqrt(w->Aequil[i]);
@@ -274,20 +259,6 @@ void use_ruiz_equilibration(pwork *w)
           ind += w->C->soc[i].p;
         }
 
-#ifdef EXPCONE 
-        /*Do the same for the exponential cones*/
-        for(i = 0; i < w->C->nexc; i++) {
-             total = 0.0;
-             for(j = 0; j < 3; j++) {
-               total += w->Gtmp[ind + j];
-             }
-             for(j = 0; j < 3; j++) {
-               Gtmp[ind + j] = total/3.0;
-             }
-             ind += 3;
-           }
-#endif
-
         /* take the sqrt */
         for(i = 0; i < num_cols; i++) {
           xtmp[i] = fabs(xtmp[i]) < 1e-6 ? 1.0 : sqrt(xtmp[i]);
@@ -371,7 +342,7 @@ void set_equilibration(pwork *w)
 void unset_equilibration(pwork *w)
 {
     idxint i;
-    idxint num_cols = w->A ? w->A->n : w->G->n;
+    //idxint num_cols = w->A ? w->A->n : w->G->n;
     idxint num_A_rows = w->A ? w->A->m : 0;
     idxint num_G_rows = w->G->m;
 
@@ -380,10 +351,11 @@ void unset_equilibration(pwork *w)
     if(num_G_rows > 0)
         restore(w->Gequil, w->xequil, w->G);
 
-    /* unequilibrate the c vector */
+    /* unequilibrate the c vector 
     for(i = 0; i < num_cols; i++) {
         w->c[i] *= w->xequil[i];
-    }
+    }*/
+
     /* unequilibrate the b vector */
     for(i = 0; i < num_A_rows; i++) {
         w->b[i] *= w->Aequil[i];
