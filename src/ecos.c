@@ -867,8 +867,8 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
         pot_shift    = w->D+1;
         pot_constant = pot_shift+sqrt(pot_shift);
     }
+
     //Start of the actual linesearch 
-    
     //Potential for the present point
     if(affine == 0)
     {  
@@ -928,6 +928,7 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                 //If all the mui are larger than MIN_DISTANCE*exmpu then j == m
                 if(j==w->m)
                 {  
+
                         barrier = evalBarrierValue(ws,wz, w->C->fexv, w->C->nexc);
                         
                         //Evaluate the barrier if we will need it 
@@ -946,8 +947,10 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                         //*centrality = evaluate_functional_centrality(ws, wz, w->C->fexv, expmu, w->C->nexc);
                         if(w->stgs->cent_vars == 0 || *centrality<w->stgs->centrality) 
                         {
+
                            if(affine==0 & potential_vars > 0)  //Reduce the potential on the combined steps
                            {
+
                                 if(potential_vars == 1)
                                 {
                                     potential = barrier + pot_constant*log(expmu)+pot_shift;
@@ -955,6 +958,7 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                                 else if(potential_vars == 2)
                                 {
                                     potential = barrier+symmetric_barrier+pot_constant*log(mu)+pot_shift;
+
                                 }
                                 if(potential < min_potential) 
                                 {
@@ -1163,7 +1167,9 @@ idxint ECOS_solve(pwork* w)
         idxint fc = w->C->fexv; //First cone variable 
         idxint k;
 #endif
-
+//XXX
+        PRINTTEXT("Potentail %i, Centrality vars %i, Centrality %e, Initialization %i, One Mu %i",w->stgs->potential,
+            w->stgs->cent_vars, w->stgs->centrality, w->stgs->initialization, w->stgs->one_mu);
 #if DEBUG
     char fn[20];
 #endif
