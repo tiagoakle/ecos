@@ -81,12 +81,12 @@ void bring2cone(cone* C, pfloat* r, pfloat* s)
 
 	/* LP cone */
 	for( i=0; i < C->lpc->p; i++ ){
-		s[i] = r[i] + alpha;
+		s[i] = r[i] + alpha;        
 	}
 
 	/* Second-order cone */
 	for( l=0; l < C->nsoc; l++ ){
-		s[i] = r[i] + alpha; i++;
+		s[i] = r[i] + alpha; i++;        
 		for( j=1; j < C->soc[l].p; j++ ){ s[i] = r[i]; i++; }
 	}
 }
@@ -128,10 +128,37 @@ void bring2ExponentialCone(cone* C, pfloat* s, pfloat *z, idxint D)
        i=i+3;
     }
 }
+
+//Sets the initial point to the jordan algebra identity e times scaling for the symmetric cones
+//And the central ray for the exponential cone, scaled by scaling
+void unitInitialization(cone* C, pfloat* s, pfloat* z, pfloat scaling)
+{
+    idxint i,l,j;
+
+    /* LP cone */
+    for( i=0; i < C->lpc->p; i++ ){
+        s[i] = scaling;
+        z[i] = scaling;
+    }
+
+    /* Second-order cone */
+    for( l=0; l < C->nsoc; l++ ){
+        s[i] = scaling; z[i] = scaling;  i++;
+        for( j=1; j < C->soc[l].p; j++ ){ s[i] = 0.0; z[i] = 0.0; i++; }
+    }
+    for(l=0;l<C->nexc;l++)
+    {
+       s[i]   = scaling*(-1.051383945322714);
+       s[i+1] = scaling*(1.258967884768947);
+       s[i+2] = scaling*(0.556409619469370);
+       z[i]   = scaling*(-1.051383945322714);
+       z[i+1] = scaling*(1.258967884768947);
+       z[i+2] = scaling*(0.556409619469370);
+       i=i+3;
+    }
+}
+
 #endif
-
-
-
 
 
 /**

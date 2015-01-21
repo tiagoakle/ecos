@@ -408,7 +408,18 @@ idxint init(pwork* w)
 #ifdef EXPCONE
     /* At this point the symmetric variables are set so initialize 
      * the exponential variables */
-    bring2ExponentialCone(w->C, w->s, w->z, w->D);
+    /*XXX: This is inefficient, however we will use it for testing, 
+    if the initialization scheme is 1 we dissregard the present initial point 
+    and instead set all the variables to the central ray, else we just set the exponentials
+    */
+    if(w->stgs->initialization==1)
+    {
+        unitInitialization(w->C, w->s, w->z, 1.0);
+    }
+    else
+    {
+        bring2ExponentialCone(w->C, w->s, w->z, w->D);
+    }
 #endif	
 	/* Prepare RHS1 - before this line RHS1 = [0; b; h], after it holds [-c; b; h] */
 	for( i=0; i<w->n; i++){ w->KKT->RHS1[Pinv[i]] = -w->c[i]; }
@@ -445,7 +456,7 @@ idxint init(pwork* w)
     w->info->mu = w->info->mu/(w->D+1);
     w->info->expmu = w->info->expmu/(3.0*w->C->nexc);
     
-    //XXX: Initial centrality 
+    /*XXX: Initial centrality 
     symmu = symmu + w->tau*w->kap;
     symmu = symmu/(w->D+1-3.0*w->C->nexc);
     pfloat ini_cent = 3.0*w->C->nexc*log(w->info->expmu) + evalBarrierValue(w->s, w->z, w->C->fexv, w->C->nexc)+3*w->C->nexc;
@@ -453,6 +464,7 @@ idxint init(pwork* w)
     pfloat ini_cent_mu = 3.0*w->C->nexc*log(w->info->mu) + evalBarrierValue(w->s, w->z, w->C->fexv, w->C->nexc)+3*w->C->nexc;
     PRINTTEXT("=== Initial centrality %3.3e ini cent mu %3.3e initial mu %3.3e initial expmu %3.3e initial symmu %3.3e\n",
                ini_cent,ini_cent_mu,w->info->mu, w->info->expmu, symmu);
+    */
 #endif 
 
 
@@ -730,14 +742,19 @@ void RHS_combined(pwork* w)
 
 #ifdef EXPCONE
     pfloat* s   = w->s;
+    pfloat  sigmaexpmu; 
     k = w->C->fexv;
-//Check the settings and use the correct mu
-//TODO: Cleanup
-    pfloat sigmaexpmu = w->info->sigma*w->info->expmu; 
+    
+    //Select the mu to use in the search direction
     if(w->stgs->one_mu==1)
     {
+        sigmaexpmu = w->info->sigma*w->info->expmu;
+    }
+    else if(w->stgs->one_mu == 2)
+    {        
         sigmaexpmu = w->info->sigma*w->info->mu;
     } 
+
     /*Exponential cones*/
     // -(1-sigma)*rz +s + expmu*sigma*g(x) 
     for(l=0;l<w->C->nexc;l++)
@@ -780,6 +797,8 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
     
     //Settings
     pfloat gamma = w->stgs->gamma;
+    idxint cent_vars = w->stgs->cent_vars;    
+    idxint potential_vars = w->stgs->potential;
 
     //Misc 
     idxint bk_iter, j;
@@ -821,8 +840,33 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
     //Initialize the other statistics 
     pfloat* centrality = &w->info->centrality;
     pfloat barrier = 0.0; //Variable to hold the value of f_e(s_e)+f^\star_e(z_e)
+    pfloat symmetric_barrier = 0.0;
     *(centrality) = 1e300; //Placeholder 
 
+    //Constants 
+    pfloat cent_constant, pot_constant, pot_shift;
+    if(cent_vars == 1) 
+        cent_constant = 3*w->C->nexc;
+    else if( cent_vars == 2)
+        cent_constant = w->D+1;
+    else
+        cent_constant  = 0;
+
+    if(potential_vars == 0)
+    {
+        pot_constant = 0.0;
+        pot_shift =    0.0;
+    }
+    else if(potential_vars == 1)
+    {        
+        pot_shift    = 3*w->C->nexc;
+        pot_constant = pot_shift + sqrt(pot_shift);
+    }
+    else if(potential_vars == 2)
+    {        
+        pot_shift    = w->D+1;
+        pot_constant = pot_shift+sqrt(pot_shift);
+    }
     //Start of the actual linesearch 
     
     //Potential for the present point
@@ -885,37 +929,35 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                 if(j==w->m)
                 {  
                         barrier = evalBarrierValue(ws,wz, w->C->fexv, w->C->nexc);
-#ifdef FULL_BARRIER
-                        barrier+= evalSymmetricBarrierValue(ws, wz, tau+alpha*dtau, kap+alpha*dkappa, w->C);
-#endif
-                    //If one mu
-                        if(w->stgs->one_mu == 1) {
-                            *centrality = barrier+3*w->C->nexc*log(expmu)+3*w->C->nexc;
-                        }
-                        else
+                        
+                        //Evaluate the barrier if we will need it 
+                        if(cent_vars == 2 || potential_vars == 2)
+                            symmetric_barrier = evalSymmetricBarrierValue(ws, wz, tau+alpha*dtau, kap+alpha*dkappa, w->C);
+
+                        if(cent_vars == 1) //Constrain the exponential variables
                         {
-                            *centrality = barrier+3*w->C->nexc*log(mu)+3*w->C->nexc;
+                            *centrality = barrier+cent_constant*log(expmu)+cent_constant;
                         }
+                        else if(cent_vars == 2){ //Constrain all the variables
+
+                            *centrality = barrier+symmetric_barrier+ cent_constant*log(mu)+cent_constant;
+                        }
+                      
                         //*centrality = evaluate_functional_centrality(ws, wz, w->C->fexv, expmu, w->C->nexc);
-                        if(*centrality<w->stgs->centrality)
+                        if(w->stgs->cent_vars == 0 || *centrality<w->stgs->centrality) 
                         {
-                           if(affine==0&w->stgs->potential == 1)  //Reduce the potential on the combined steps
+                           if(affine==0 & potential_vars > 0)  //Reduce the potential on the combined steps
                            {
-                                if(w->stgs->one_mu == 1) {
-#ifdef FULL_BARRIER
-                                    potential = barrier+(w->D+1+sqrt(w->D+1))*log(mu)+3*w->C->nexc;
-#else                                    
-                                    potential = barrier+(w->C->nexc*3+sqrt(w->C->nexc*3))*log(mu)+3*w->C->nexc;
-#endif
-                                }
-                                else
+                                if(potential_vars == 1)
                                 {
-                                    potential = barrier+(w->C->nexc*3+sqrt(w->C->nexc*3))*log(expmu)+3*w->C->nexc;
+                                    potential = barrier + pot_constant*log(expmu)+pot_shift;
                                 }
-        
-                                 potential = barrier + (w->C->nexc*3+sqrt(w->C->nexc*3))*log(expmu)+3*w->C->nexc;
-                                 if(potential < min_potential) 
-                                 {
+                                else if(potential_vars == 2)
+                                {
+                                    potential = barrier+symmetric_barrier+pot_constant*log(mu)+pot_shift;
+                                }
+                                if(potential < min_potential) 
+                                {
                                     min_potential       = potential;
                                     min_potential_alpha = alpha;
                                     (*pob)++; /* Count the backtrack due to a potential violation */
@@ -1300,7 +1342,7 @@ idxint ECOS_solve(pwork* w)
 		/* Compute scalings */
 #ifdef EXPCONE
         pfloat used_mu =  0.0;
-        if(w->stgs->one_mu == 1){used_mu = w->info->mu;}else{used_mu = w->info->expmu;}
+        if(w->stgs->one_mu == 2){used_mu = w->info->mu;}else if(w->stgs->one_mu == 1){used_mu = w->info->expmu;}
 		if( updateScalings(w->C, w->s, w->z, w->lambda, used_mu) == OUTSIDE_CONE ){
 #else
 		if( updateScalings(w->C, w->s, w->z, w->lambda) == OUTSIDE_CONE ){

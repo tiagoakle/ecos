@@ -761,6 +761,9 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
     mywork->stgs->centrality  = CENTRALITY;
     mywork->stgs->potential   = POTENTIAL;
     mywork->stgs->one_mu      = ONEMU;
+
+    mywork->stgs->cent_vars      = CENTRALITY_VARS;   
+    mywork->stgs->initialization = INITIALIZATION; 
 #endif
 
 

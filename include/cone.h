@@ -101,6 +101,7 @@ void bring2cone(cone* C, pfloat* r, pfloat* s);
 
 #ifdef EXPCONE
 void bring2ExponentialCone(cone* C, pfloat* s, pfloat *z, idxint D);
+void unitInitialization(cone* C, pfloat* s, pfloat* z, pfloat scaling);
 #endif
 
 /**

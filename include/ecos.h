@@ -65,12 +65,15 @@
 #ifdef EXPCONE
 #define MAX_BK           (90)    /*Maximum backtracking steps*/
 #define BK_SCALE         (0.8)   /*Backtracking constant*/
-#define CENTRALITY       (1e10)     /*Centrality requirement*/
 #define MIN_DISTANCE     (0.1)   /* dont let sqrt(r), sqrt(-u) or sqrt(v)
                                    become smaller than
                                   MIN_DISTANCE*expmu*/
-#define POTENTIAL        (1)     /* Use the potential function while backtracking*/
-#define ONEMU            (1)     /* Default to one mu*/
+
+#define POTENTIAL        (1)     /* Use the potential 0 none 1 expvars 2 all */
+#define ONEMU            (1)     /* 1 expmu 2 all vars */                                   
+#define CENTRALITY       (1)     /*Centrality requirement*/
+#define CENTRALITY_VARS  (1)     /* 0 None 1 exp 2 all */
+#define INITIALIZATION   (0)     /* 0 mehrotra mixed all ones */
 #endif
 
 /* EQUILIBRATION METHOD ------------------------------------------------ */
@@ -112,9 +115,11 @@ typedef struct settings{
 #ifdef EXPCONE /*Exponential cone settings*/
     idxint max_bk_iter;      /* Maximum backtracking iterations */
     pfloat bk_scale;         /* Backtracking scaling */
-    pfloat centrality;       /* Centrality */
-    idxint potential;        /* Flag to indicate if we use the potential function */
-    idxint one_mu;
+    pfloat centrality;       /* Centrality bound, ignored when centrality vars = 0*/
+    idxint cent_vars;   /* Which variables to constraint 0 none 1 only exp 2 all vars*/
+    idxint potential;        /* Flag to indicate which potential to use 0 none 1 only exp 2 all vars */
+    idxint one_mu;           /* Mu to use for the calculation of the directions */
+    idxint initialization;   /* Mehrotra-mixed = 0, all ones = 1*/
 #endif
 } settings;
 
