@@ -33,6 +33,9 @@
 #include <stdio.h>
 #endif
 
+#ifdef EXPCONE
+ #include "debug_tools.h"
+#endif
 
 
 /* Some internal defines */
@@ -465,6 +468,8 @@ idxint init(pwork* w)
     PRINTTEXT("=== Initial centrality %3.3e ini cent mu %3.3e initial mu %3.3e initial expmu %3.3e initial symmu %3.3e\n",
                ini_cent,ini_cent_mu,w->info->mu, w->info->expmu, symmu);
     */
+    //Allocate space for the history
+    allocateHistory(w);
 #endif 
 
 
@@ -564,6 +569,22 @@ void updateStatistics(pwork* w)
     info->pinfres = w->hz + w->by < 0 ? w->hresx/w->resx0 / (-w->hz - w->by) : NAN;
     info->dinfres = w->cx < 0 ? MAX(w->hresy/w->resy0, w->hresz/w->resz0) / (-w->cx) : NAN;
 
+#ifdef EXPCONE
+   //Save the history 
+   idxint i = w->info->iter;
+    w->info->hist_presy[i] = norm2(w->ry,w->p);    
+    w->info->hist_presz[i] = norm2(w->rz,w->m);
+    w->info->hist_dres[i]  = norm2(w->rx,w->n); 
+    w->info->hist_gres[i]  = fabs(w->rt);
+    w->info->hist_mu[i]    = info->mu;
+    w->info->hist_expmu[i] = info->expmu;
+    //w->info->hist_sigma[i] =  //This one has to be done later
+    w->info->hist_tau[i]   = w->tau; 
+    w->info->hist_kappa[i] = w->kap; 
+    w->info->hist_hpresy[i] = w->hresy;     
+    w->info->hist_hpresz[i] = w->hresx; 
+    w->info->hist_hdres[i]  = w->hresx;
+#endif
 
 #if PRINTLEVEL > 2
     PRINTTEXT("TAU=%6.4e  KAP=%6.4e  PINFRES=%6.4e HOMRES %6.4e, %6.4e DINFRES=%6.4e\n",w->tau,w->kap,info->pinfres,w->hresx, (-w->hz - w->by), info->dinfres );
@@ -1516,7 +1537,9 @@ idxint ECOS_solve(pwork* w)
         if( sigma < SIGMAMIN ) sigma = SIGMAMIN;
         w->info->sigma = sigma;
 
-
+#ifdef EXPCONE        
+    w->info->hist_sigma[w->info->iter] = sigma;
+#endif
 		/* COMBINED SEARCH DIRECTION */
 		RHS_combined(w);
 #if PROFILING > 1

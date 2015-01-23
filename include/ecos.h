@@ -172,8 +172,23 @@ typedef struct stats{
     idxint cmbBack; /*Total combined backtracking steps*/ 
 
     pfloat centrality; /*Centrality at the end of the backtracking*/
+    
+    //Vectors to store the convergence history
+    pfloat* hist_presy;         
+    pfloat* hist_presz;     
+    pfloat* hist_dres;
+    pfloat* hist_gres;    
+    pfloat* hist_mu;
+    pfloat* hist_expmu;
+    pfloat* hist_sigma;
+    pfloat* hist_tau;
+    pfloat* hist_kappa;
+    pfloat* hist_hpresy;    
+    pfloat* hist_hpresz;
+    pfloat* hist_hdres;
 #endif   
 } stats;
+
 
 
 /* ALL DATA NEEDED BY SOLVER ------------------------------------------- */
