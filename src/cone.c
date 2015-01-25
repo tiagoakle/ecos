@@ -116,6 +116,7 @@ void bring2ExponentialCone(cone* C, pfloat* s, pfloat *z, idxint D)
     musym += 1.0; //Add the initial tau*kappa 
     musym = musym/SymD;
     musym = sqrt(musym); 
+    musym = 1.0;
     /* Set the exponential cone variables */
     for(l=0;l<C->nexc;l++)
     {
@@ -264,8 +265,8 @@ idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda)
 }
 
 #ifdef EXPCONE
-//Evaulates log(s) + log(z) + log(t) + log(k) + logbarriersocp
-pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, pfloat kapIter, cone* C)
+//Evaulates log(s) + log(z) + log(t) + log(k) + logbarriersocp - (D+1)
+pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, pfloat kapIter, cone* C, pfloat D)
 {
    pfloat barrier = 0.0;
    idxint j,k,l; 
@@ -296,7 +297,7 @@ pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, p
         barrier-=0.5*log(normAccumZ);
         
     }
-    return barrier;
+    return barrier-D-1;
 }
 #endif
 

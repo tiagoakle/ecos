@@ -119,7 +119,7 @@ idxint updateScalings(cone* C, pfloat* s, pfloat* z, pfloat* lambda);
 #endif
 
 #ifdef EXPCONE
-pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, pfloat kapIter, cone* C);
+pfloat evalSymmetricBarrierValue(pfloat* siter, pfloat *ziter, pfloat tauIter, pfloat kapIter, cone* C, pfloat D);
 #endif
 
 /**

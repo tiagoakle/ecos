@@ -534,8 +534,7 @@ void updateStatistics(pwork* w)
 
 	/* mu = (s'*z + kap*tau) / (D+1) where s'*z is the duality gap */
 	info->gap = eddot(w->m, w->s, w->z);
-	info->mu = (info->gap + w->kap*w->tau) / (w->D + 1);
-
+    info->mu = (info->gap + w->kap*w->tau) / (w->D + 1);
 	info->kapovert = w->kap / w->tau;
 	info->pcost = w->cx / w->tau;
 	info->dcost = -(w->hz + w->by) / w->tau;
@@ -915,7 +914,6 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
             expmu += ws[j]*wz[j];
          }
          mu += expmu;
-         //Tau and Kappa
          mu = mu+(tau+alpha*dtau)*(kap+alpha*dkappa);
          mu = mu/(w->D+1);
          compexp = expmu;
@@ -954,15 +952,15 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                         
                         //Evaluate the barrier if we will need it 
                         if(cent_vars == 2 || potential_vars == 2)
-                            symmetric_barrier = evalSymmetricBarrierValue(ws, wz, tau+alpha*dtau, kap+alpha*dkappa, w->C);
+                            symmetric_barrier = evalSymmetricBarrierValue(ws, wz, tau+alpha*dtau, kap+alpha*dkappa, w->C, w->D);
 
                         if(cent_vars == 1) //Constrain the exponential variables
                         {
-                            *centrality = barrier+cent_constant*log(expmu)+cent_constant;
+                            *centrality = barrier + cent_constant*log(expmu) + cent_constant;
                         }
                         else if(cent_vars == 2){ //Constrain all the variables
 
-                            *centrality = barrier+symmetric_barrier+ cent_constant*log(mu)+cent_constant;
+                            *centrality = barrier+symmetric_barrier + cent_constant*log(mu) + cent_constant;
                         }
                       
                         //*centrality = evaluate_functional_centrality(ws, wz, w->C->fexv, expmu, w->C->nexc);
@@ -1185,12 +1183,11 @@ idxint ECOS_solve(pwork* w)
 	idxint exitcode = ECOS_FATAL, interrupted = 0;
 
 #ifdef EXPCONE
-        idxint fc = w->C->fexv; //First cone variable 
+        idxint fc = w->C->fexv; //First cone variable e
         idxint k;
-#endif
-//XXX
-        PRINTTEXT("Potentail %i, Centrality vars %i, Centrality %e, Initialization %i, One Mu %i",w->stgs->potential,
-            w->stgs->cent_vars, w->stgs->centrality, w->stgs->initialization, w->stgs->one_mu);
+#endif 
+           PRINTTEXT("Potentail %i, Centrality vars %i, Centrality %e, Initialization %i, One Mu %i Complexity %e\n",w->stgs->potential,
+            w->stgs->cent_vars, w->stgs->centrality, w->stgs->initialization, w->stgs->one_mu, w->D);
 #if DEBUG
     char fn[20];
 #endif
