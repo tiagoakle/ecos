@@ -23,7 +23,7 @@ $(AMD):
 	$(AR) -x external/amd/libamd.a
 
 # build ECOS
-ECOS_OBJS = ecos.o kkt.o cone.o spla.o ctrlc.o timer.o preproc.o splamm.o equil.o expcone.o wright_omega.o debug_tools.h
+ECOS_OBJS = ecos.o kkt.o cone.o spla.o ctrlc.o timer.o preproc.o splamm.o equil.o expcone.o wright_omega.o debug_tools.o
 libecos.a: $(ECOS_OBJS) $(LDL) $(AMD)
 	$(ARCHIVE) $@ $^
 	- $(RANLIB) $@
