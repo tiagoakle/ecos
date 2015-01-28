@@ -307,11 +307,13 @@ idxint init(pwork* w)
 	for( i=0; i<w->n; i++ ){ w->KKT->RHS2[w->KKT->Pinv[i]] = -w->c[i]; }
 	for( i=w->n; i<w->KKT->PKPt->n; i++ ){ w->KKT->RHS2[w->KKT->Pinv[i]] = 0; }
 
-	/* get scalings of problem data */
+    //XXX: Try this and change in main branch , moved to the end to calculate residuals
+	/* get scalings of problem data 
 	rx = norm2(w->c, w->n); w->resx0 = MAX(1, rx);
 	ry = norm2(w->b, w->p); w->resy0 = MAX(1, ry);
 	rz = norm2(w->h, w->m); w->resz0 = MAX(1, rz);
-
+    */
+ 
 
 	/* Factor KKT matrix - this is needed in all 3 linear system solves */
 #if PROFILING > 1
@@ -471,8 +473,14 @@ idxint init(pwork* w)
     //Allocate space for the history
     allocateHistory(w);
 #endif 
-
-
+    
+    ////Now that the starting points are initialized compute residuals
+    computeResiduals(w);
+    ////Compute the scalings from the residuals
+    rx = norm2(w->rx, w->n); w->resx0 = MAX(1, rx);
+	ry = norm2(w->ry, w->p); w->resy0 = MAX(1, ry);
+	rz = norm2(w->rz, w->m); w->resz0 = MAX(1, rz);
+    
 	return 0;
 }
 
