@@ -288,6 +288,7 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
 pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine);
 #endif
 
+void computeResiduals(pwork* w);
 
 /* solve */
 idxint ECOS_solve(pwork* w);
