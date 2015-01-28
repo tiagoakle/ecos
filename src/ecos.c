@@ -884,8 +884,9 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
     }
     else if(potential_vars == 2)
     {        
-        pot_shift    = w->D+1;
-        pot_constant = pot_shift+sqrt(pot_shift);
+        //pot_shift    = w->D+1;
+        //pot_constant = pot_shift+sqrt(pot_shift);
+        pot_constant = (w->D+1)/fmax(w->info->sigma,0.1);
     }
 
     //Start of the actual linesearch 
@@ -985,7 +986,8 @@ pfloat expConeLineSearch(pwork* w, pfloat dtau, pfloat dkappa, idxint affine)
                                     min_potential_alpha = alpha;
                                     (*pob)++; /* Count the backtrack due to a potential violation */
 #if PRINTLEVEL > 2 
-                                    PRINTTEXT("Potential decreases %e, Centrality %e\n",potential,*centrality);
+                                    PRINTTEXT("Potential decreases %e, sym %e, unsym %e mu %e, expmu %e\n",potential,symmetric_barrier,barrier,
+                                                                                                           mu,expmu);
 #endif
                                  }
                                  else //Iterate augments potential
@@ -1186,8 +1188,8 @@ idxint ECOS_solve(pwork* w)
         idxint fc = w->C->fexv; //First cone variable e
         idxint k;
 #endif 
-           PRINTTEXT("Potentail %i, Centrality vars %i, Centrality %e, Initialization %i, One Mu %i Complexity %e\n",w->stgs->potential,
-            w->stgs->cent_vars, w->stgs->centrality, w->stgs->initialization, w->stgs->one_mu, w->D);
+           //PRINTTEXT("Potentail %i, Centrality vars %i, Centrality %e, Initialization %i, One Mu %i Complexity %e\n",w->stgs->potential,
+           //w->stgs->cent_vars, w->stgs->centrality, w->stgs->initialization, w->stgs->one_mu, w->D);
 #if DEBUG
     char fn[20];
 #endif
