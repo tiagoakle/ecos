@@ -307,14 +307,6 @@ idxint init(pwork* w)
 	for( i=0; i<w->n; i++ ){ w->KKT->RHS2[w->KKT->Pinv[i]] = -w->c[i]; }
 	for( i=w->n; i<w->KKT->PKPt->n; i++ ){ w->KKT->RHS2[w->KKT->Pinv[i]] = 0; }
 
-    //XXX: Try this and change in main branch , moved to the end to calculate residuals
-	/* get scalings of problem data 
-	rx = norm2(w->c, w->n); w->resx0 = MAX(1, rx);
-	ry = norm2(w->b, w->p); w->resy0 = MAX(1, ry);
-	rz = norm2(w->h, w->m); w->resz0 = MAX(1, rz);
-    */
- 
-
 	/* Factor KKT matrix - this is needed in all 3 linear system solves */
 #if PROFILING > 1
 	tic(&tfactor);
@@ -473,14 +465,17 @@ idxint init(pwork* w)
     //Allocate space for the history
     allocateHistory(w);
 #endif 
-    
+ 
+	/* get scalings of problem data */
+	rx = norm2(w->c, w->n); w->resx0 = MAX(1, rx);
+	ry = norm2(w->b, w->p); w->resy0 = MAX(1, ry);
+	rz = norm2(w->h, w->m); w->resz0 = MAX(1, rz);    
     ////Now that the starting points are initialized compute residuals
     computeResiduals(w);
     ////Compute the scalings from the residuals
-    rx = norm2(w->rx, w->n); w->resx0 = MAX(1, rx);
-	ry = norm2(w->ry, w->p); w->resy0 = MAX(1, ry);
-	rz = norm2(w->rz, w->m); w->resz0 = MAX(1, rz);
-    
+    w->hresx0 = MAX(1,w->hresx);
+    w->hresy0 = MAX(1,w->hresy);
+    w->hresz0 = MAX(1,w->hresz);
 	return 0;
 }
 
@@ -573,8 +568,12 @@ void updateStatistics(pwork* w)
      * info->pinfres = w->hz + w->by < 0 ? w->hresx / w->resx0 / (-w->hz - w->by) : NAN;
      * info->dinfres = w->cx < 0 ? MAX(w->hresy/w->resy0, w->hresz/w->resz0) / (-w->cx) : NAN;
      */
-    info->pinfres = w->hz + w->by < 0 ? w->hresx/w->resx0 / (-w->hz - w->by) : NAN;
-    info->dinfres = w->cx < 0 ? MAX(w->hresy/w->resy0, w->hresz/w->resz0) / (-w->cx) : NAN;
+    //info->pinfres = w->hz + w->by < 0 ? w->hresx/w->resx0 / (-w->hz - w->by) : NAN;
+    //info->dinfres = w->cx < 0 ? MAX(w->hresy/w->resy0, w->hresz/w->resz0) / (-w->cx) : NAN;
+      
+      info->pinfres = w->hz + w->by < 0 ? w->hresx/w->hresx0 / (-w->hz - w->by) * MAX(w->resy0, w->resz0) : NAN;
+      info->dinfres = w->cx < 0 ? MAX(w->hresy/w->hresy0, w->hresz/w->hresz0) / (-w->cx) * w->resx0 : NAN;
+
 
 #ifdef EXPCONE
    //Save the history 

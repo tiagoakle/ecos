@@ -244,7 +244,7 @@ typedef struct pwork{
 
 	/* scalings of problem data */
 	pfloat resx0;  pfloat resy0;  pfloat resz0;
-
+    pfloat hresx0; pfloat hresy0; pfloat hresz0;
 	/* residuals */
 	pfloat *rx;   pfloat *ry;   pfloat *rz;   pfloat rt;
 	pfloat hresx;  pfloat hresy;  pfloat hresz;
