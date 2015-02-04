@@ -748,7 +748,15 @@ void RHS_combined(pwork* w)
 
 	/* ds = lambda o lambda + W\s o Wz - sigma*mu*e) */
 	conicProduct(w->lambda, w->lambda, w->C, ds1);
-	conicProduct(w->dsaff_by_W, w->W_times_dzaff, w->C, ds2);
+#if defined EXPCONE
+    if(w->stgs->second_order==1) //Allow dissabling of the second order         
+       conicProduct(w->dsaff_by_W, w->W_times_dzaff, w->C, ds2);
+    else 
+        for(i=0;i<w->m;i++)
+            ds2[i] = 0;
+#else   
+       conicProduct(w->dsaff_by_W, w->W_times_dzaff, w->C, ds2);
+#endif
 	for( i=0; i < w->C->lpc->p; i++ ){ ds1[i] += ds2[i] - sigmamu; }
 	k = w->C->lpc->p;
 	for( i=0; i < w->C->nsoc; i++ ){
@@ -1567,7 +1575,14 @@ idxint ECOS_solve(pwork* w)
 #endif
 
   		/* bkap = kap*tau + dkapaff*dtauaff - sigma*info.mu; */
+#ifdef EXPCONE        
+    if(w->stgs->second_order==1)
+        bkap = w->kap*w->tau + dkapaff*dtauaff - sigma*w->info->mu;
+    else
+        bkap = w->kap*w->tau + dkapaff*dtauaff - sigma*w->info->mu;
+#else
 		bkap = w->kap*w->tau + dkapaff*dtauaff - sigma*w->info->mu;
+#endif
 
 		/* dtau = ((1-sigma)*rt - bkap/tau + c'*x2 + by2 + h'*z2) / dtau_denom; */
 		dtau = ((1-sigma)*w->rt - bkap/w->tau + eddot(w->n, w->c, w->KKT->dx2) + eddot(w->p, w->b, w->KKT->dy2) + eddot(w->m, w->h, w->KKT->dz2)) / dtau_denom;

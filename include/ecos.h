@@ -74,6 +74,7 @@
 #define CENTRALITY       (1)     /*Centrality requirement*/
 #define CENTRALITY_VARS  (1)     /* 0 None 1 exp 2 all */
 #define INITIALIZATION   (0)     /* 0 mehrotra mixed all ones */
+#define SECOND_ORDER     (0)                                        
 #endif
 
 /* EQUILIBRATION METHOD ------------------------------------------------ */
@@ -120,6 +121,7 @@ typedef struct settings{
     idxint potential;        /* Flag to indicate which potential to use 0 none 1 only exp 2 all vars */
     idxint one_mu;           /* Mu to use for the calculation of the directions */
     idxint initialization;   /* Mehrotra-mixed = 0, all ones = 1*/
+    idxint second_order;     /* Dissable the second order correction to the cetnral path*/
 #endif
 } settings;
 
