@@ -77,7 +77,7 @@
 #endif
 
 /* EQUILIBRATION METHOD ------------------------------------------------ */
-#define EQUILIBRATE (0)     /* use equlibration of data matrices? >0: yes */
+#define EQUILIBRATE (1)     /* use equlibration of data matrices? >0: yes */
 #define EQUIL_ITERS (3)         /* number of equilibration iterations  */
 #define RUIZ_EQUIL      /* define algorithm to use - if both are ... */
 /*#define ALTERNATING_EQUIL*/ /* ... commented out no equlibration is used */
@@ -248,6 +248,9 @@ typedef struct pwork{
 	/* residuals */
 	pfloat *rx;   pfloat *ry;   pfloat *rz;   pfloat rt;
 	pfloat hresx;  pfloat hresy;  pfloat hresz;
+
+    /* norms */
+    pfloat nx,ny,nz,ns; 
 
 	/* temporary storage */
 	pfloat cx;  pfloat by;  pfloat hz;  pfloat sz;

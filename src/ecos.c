@@ -522,6 +522,12 @@ void computeResiduals(pwork *w)
 	w->by = w->p > 0 ? eddot(w->p, w->b, w->y) : 0.0;
 	w->hz = eddot(w->m, w->h, w->z);
 	w->rt = w->kap + w->cx + w->by + w->hz;
+
+    /* Norms of x y z */
+    w->nx = norm2(w->x,w->n);
+    w->ny = norm2(w->y,w->p);
+    w->nz = norm2(w->z,w->m);    
+    w->ns = norm2(w->s,w->m);
 }
 
 
@@ -571,11 +577,11 @@ void updateStatistics(pwork* w)
     //info->pinfres = w->hz + w->by < 0 ? w->hresx/w->resx0 / (-w->hz - w->by) : NAN;
     //info->dinfres = w->cx < 0 ? MAX(w->hresy/w->resy0, w->hresz/w->resz0) / (-w->cx) : NAN;
       
-   //   info->pinfres = w->hz + w->by < 0 ? w->hresx/w->hresx0 / (-w->hz - w->by) * MAX(w->resy0, w->resz0) : NAN;
-   //   info->dinfres = w->cx < 0 ? MAX(w->hresy/w->hresy0, w->hresz/w->hresz0) / (-w->cx) * w->resx0 : NAN;
+    info->pinfres = w->hz + w->by < 0 ? w->hresx / (w->ny+w->nz) : NAN;
+    info->dinfres = w->cx < 0 ? MAX(w->hresy, w->hresz) / (w->nx+w->ns) : NAN;
        
-      info->pinfres = w->hz + w->by < 0 ? w->hresx/w->hresx0 / (-w->hz - w->by) : NAN;
-      info->dinfres = w->cx < 0 ? MAX(w->hresy/w->hresy0, w->hresz/w->hresz0) / (-w->cx) : NAN;
+      //info->pinfres = w->hz + w->by < 0 ? w->hresx/w->hresx0 /w->nx : NAN;
+      //info->dinfres = w->cx < 0 ? MAX(w->hresy/w->hresy0, w->hresz/w->hresz0) / (w->nz+w->ny)  : NAN;
       
 
 
