@@ -147,6 +147,7 @@ void unitInitialization(cone* C, pfloat* s, pfloat* z, pfloat scaling)
         s[i] = scaling; z[i] = scaling;  i++;
         for( j=1; j < C->soc[l].p; j++ ){ s[i] = 0.0; z[i] = 0.0; i++; }
     }
+    /* Exponential cone */
     for(l=0;l<C->nexc;l++)
     {
        s[i]   = scaling*(-1.051383945322714);

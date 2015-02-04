@@ -571,8 +571,12 @@ void updateStatistics(pwork* w)
     //info->pinfres = w->hz + w->by < 0 ? w->hresx/w->resx0 / (-w->hz - w->by) : NAN;
     //info->dinfres = w->cx < 0 ? MAX(w->hresy/w->resy0, w->hresz/w->resz0) / (-w->cx) : NAN;
       
-      info->pinfres = w->hz + w->by < 0 ? w->hresx/w->hresx0 / (-w->hz - w->by) * MAX(w->resy0, w->resz0) : NAN;
-      info->dinfres = w->cx < 0 ? MAX(w->hresy/w->hresy0, w->hresz/w->hresz0) / (-w->cx) * w->resx0 : NAN;
+   //   info->pinfres = w->hz + w->by < 0 ? w->hresx/w->hresx0 / (-w->hz - w->by) * MAX(w->resy0, w->resz0) : NAN;
+   //   info->dinfres = w->cx < 0 ? MAX(w->hresy/w->hresy0, w->hresz/w->hresz0) / (-w->cx) * w->resx0 : NAN;
+       
+      info->pinfres = w->hz + w->by < 0 ? w->hresx/w->hresx0 / (-w->hz - w->by) : NAN;
+      info->dinfres = w->cx < 0 ? MAX(w->hresy/w->hresy0, w->hresz/w->hresz0) / (-w->cx) : NAN;
+      
 
 
 #ifdef EXPCONE
