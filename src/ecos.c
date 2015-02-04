@@ -1579,7 +1579,7 @@ idxint ECOS_solve(pwork* w)
     if(w->stgs->second_order==1)
         bkap = w->kap*w->tau + dkapaff*dtauaff - sigma*w->info->mu;
     else
-        bkap = w->kap*w->tau + dkapaff*dtauaff - sigma*w->info->mu;
+        bkap = w->kap*w->tau - sigma*w->info->mu;
 #else
 		bkap = w->kap*w->tau + dkapaff*dtauaff - sigma*w->info->mu;
 #endif
@@ -1593,7 +1593,7 @@ idxint ECOS_solve(pwork* w)
 		for( i=0; i < w->m; i++ ){ w->KKT->dz2[i] += dtau*w->KKT->dz1[i]; }
 
 		/*  ds_by_W = -(lambda \ bs + conelp_timesW(scaling,dz,dims)); */
-		/* note that ath this point w->dsaff_by_W holds already (lambda \ ds) */
+		/* note that at this point w->dsaff_by_W already holds (lambda \ ds) */
 		scale(w->KKT->dz2, w->C, w->W_times_dzaff);
        
 		for( i=0; i < w->m; i++ ){ w->dsaff_by_W[i] = -(w->dsaff_by_W[i] + w->W_times_dzaff[i]); }
@@ -1615,7 +1615,7 @@ idxint ECOS_solve(pwork* w)
         { 
             w->dsaff[i] = 0.0;
         } 
-        //Calculate muH(s)dzaff and store in dsaff
+        //Calculate muH(z)dzaff and store in dsaff
         scaleToAddExpcone(w->dsaff,w->KKT->dz2,w->C->expc,w->C->nexc,fc);
         
         //We have modified g to contain s+sigma*expmu*g(z)+(1-sigma)*second_order

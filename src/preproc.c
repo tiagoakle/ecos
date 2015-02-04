@@ -764,6 +764,7 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
 
     mywork->stgs->cent_vars      = CENTRALITY_VARS;   
     mywork->stgs->initialization = INITIALIZATION; 
+    mywork->stgs->second_order   = SECOND_ORDER;
 #endif
 
 
