@@ -752,8 +752,11 @@ void RHS_combined(pwork* w)
     if(w->stgs->second_order==1) //Allow dissabling of the second order         
        conicProduct(w->dsaff_by_W, w->W_times_dzaff, w->C, ds2);
     else 
+    {
         for(i=0;i<w->m;i++)
             ds2[i] = 0;
+        PRINTTEXT("No second order");
+    }
 #else   
        conicProduct(w->dsaff_by_W, w->W_times_dzaff, w->C, ds2);
 #endif
