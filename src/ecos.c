@@ -233,7 +233,8 @@ idxint checkExitConditions(pwork* w, idxint mode)
     }
 
     /* Primal infeasible? */
-    else if( (w->info->pinfres != NAN && w->info->pinfres < feastol) ||
+    //XXX: The second line in this if is strange 
+    else if( (w->info->pinfres != NAN && w->info->pinfres < feastol) || 
             ( w->tau < w->stgs->feastol && w->kap < w->stgs->feastol && w->info->pinfres < w->stgs->feastol) ){
 #if PRINTLEVEL > 0
         if( w->stgs->verbose ) {
@@ -563,10 +564,10 @@ void updateStatistics(pwork* w)
 	else info->relgap = NAN;
 
 	/* residuals */
-    nry = w->p > 0 ? norm2(w->ry, w->p)/w->resy0 : 0.0;
-    nrz = norm2(w->rz, w->m)/w->resz0;
+    nry = w->p > 0 ? norm2(w->ry, w->p)/MAX(w->resy0+w->nx,1) : 0.0;
+    nrz = norm2(w->rz, w->m)/MAX(w->resz0+w->nx+w->ns,1);
 	info->pres = MAX(nry, nrz) / w->tau;
-	info->dres = norm2(w->rx, w->n)/w->resx0 / w->tau;
+	info->dres = norm2(w->rx, w->n)/MAX(w->resx0+w->ny+w->nz,1) / w->tau;
 
 	/* infeasibility measures
      *
@@ -577,8 +578,8 @@ void updateStatistics(pwork* w)
     //info->pinfres = w->hz + w->by < 0 ? w->hresx/w->resx0 / (-w->hz - w->by) : NAN;
     //info->dinfres = w->cx < 0 ? MAX(w->hresy/w->resy0, w->hresz/w->resz0) / (-w->cx) : NAN;
       
-    info->pinfres = w->hz + w->by < 0 ? w->hresx / (w->ny+w->nz) : NAN;
-    info->dinfres = w->cx < 0 ? MAX(w->hresy, w->hresz) / (w->nx+w->ns) : NAN;
+    info->pinfres = w->hz + w->by < 0 ? w->hresx / MAX(w->ny+w->nz,1) : NAN;
+    info->dinfres = w->cx < 0 ? MAX(w->hresy/MAX(w->nx,1), w->hresz/MAX(w->nx+w->ns,1)) : NAN;
        
       //info->pinfres = w->hz + w->by < 0 ? w->hresx/w->hresx0 /w->nx : NAN;
       //info->dinfres = w->cx < 0 ? MAX(w->hresy/w->hresy0, w->hresz/w->hresz0) / (w->nz+w->ny)  : NAN;
@@ -755,7 +756,6 @@ void RHS_combined(pwork* w)
     {
         for(i=0;i<w->m;i++)
             ds2[i] = 0;
-        PRINTTEXT("No second order");
     }
 #else   
        conicProduct(w->dsaff_by_W, w->W_times_dzaff, w->C, ds2);

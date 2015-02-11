@@ -69,12 +69,12 @@
                                    become smaller than
                                   MIN_DISTANCE*expmu*/
 
-#define POTENTIAL        (1)     /* Use the potential 0 none 1 expvars 2 all */
-#define ONEMU            (1)     /* 1 expmu 2 all vars */                                   
+#define POTENTIAL        (0)     /* Use the potential 0 none 1 expvars 2 all */
+#define ONEMU            (2)     /* 1 expmu 2 all vars */                                   
 #define CENTRALITY       (1)     /*Centrality requirement*/
-#define CENTRALITY_VARS  (1)     /* 0 None 1 exp 2 all */
-#define INITIALIZATION   (0)     /* 0 mehrotra mixed all ones */
-#define SECOND_ORDER     (0)                                        
+#define CENTRALITY_VARS  (2)     /* 0 None 1 exp 2 all */
+#define INITIALIZATION   (1)     /* 0 mehrotra mixed all ones */
+#define SECOND_ORDER     (1)                                        
 #endif
 
 /* EQUILIBRATION METHOD ------------------------------------------------ */
