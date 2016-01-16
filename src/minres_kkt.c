@@ -17,11 +17,17 @@
 
 #include "kkt.h"
 #include "ldl.h"
-#include "../include/splamm.h"
+#include "splamm.h"
 #include "ecos.h"
 #include "cone.h"
 
 #include <math.h>
+
+#if CONEMODE == 0
+#define MTILDE (m+2*C->nsoc)
+#else
+#define MTILDE (m)
+#endif
 
 /* Solve with the abs of the diagonal*/
 void inline LDL_abs_dsolve(idxint n, pfloat *x, pfloat * D)
@@ -39,8 +45,40 @@ void inline preconditioner_solve(idxint nK, pfloat* Pb, pfloat *Px, kkt* KKT)
     LDL_ltsolve(nK, Px, KKT->L->jc, KKT->L->ir, KKT->L->pr);
 }
 
-void inline KKT_prod()
+
+//TODO DOCUMENT input output and operation permutations
+/**
+ * Computes the product PKP', the input is expected in
+ * the output is set in Px
+ */
+void inline KKT_prod( idxint n,
+                      idxint m,
+                      idxint p,
+                      idxint nK,
+                      cone* C,
+                      spmat* A,
+                      spmat* G,
+                      idxint isinit,
+                      pfloat* dx, //Work
+                      pfloat* dy, //Work
+                      pfloat* dz, //Work
+                      idxint *Pinv,
+                      pfloat *Px, //Input
+                      pfloat *work2,
+                      pfloat *work3,
+                      pfloat *Ab,  //Assign to work4, output
+                      pfloat *work5,
+                      pfloat *work6)
 {
+    idxint i, k, l, j, kk, kItRef;
+    pfloat* dPx = work2;
+    pfloat* e  = work3;
+    pfloat* ex = work3;
+    pfloat* ey = e + n;
+    pfloat* ez = e + n+p;
+    pfloat* Gdx = work6;
+    pfloat* truez = work5;
+
     /* unpermute x & copy into arrays */
     unstretch(n, p, C, Pinv, Px, dx, dy, dz);
 
@@ -49,38 +87,32 @@ void inline KKT_prod()
 
     /* 1. product on dx*/
 
-    /* ex = - A'*dy - G'*dz */
-    if(A) sparseMtVm(A, dy, ex, 0, 0);
-    sparseMtVm(G, dz, ex, 0, 0);
+    /* ex = A'*dy + G'*dz */
+    if(A) sparseMtVm(A, dy, ex, 1, 0);
+    sparseMtVm(G, dz, ex, -1, 0);
+    //TODO is p the size of the rows of A or cols of A'?
+    for(j=0;j<p;j++)
+        ex[j] = -ex[j];
+    j=0;
 
-    /* error on dy */
+    /* product on dy */
     if( p > 0 ){
-        /* ey = by - A*dx */
-        sparseMV(A, dx, ey, -1, 0);
-        ney = norminf(ey,p);
+        /* ey =  A*dx */
+        sparseMV(A, dx, ey, 1, 0);
     }
 
-
-    /* --> 3. ez = bz - G*dx + V*dz_true */
+    //TODO: Remove uneccesary Gdx??
+    /* --> 3. ez = G*dx - V*dz_true */
     kk = 0; j=0;
-#if (defined STATICREG) && (STATICREG > 0)
-    dzoffset=0;
-#endif
     sparseMV(G, dx, Gdx, 1, 1);
     for( i=0; i<C->lpc->p; i++ ){
-#if (defined STATICREG) && (STATICREG > 0)
-        ez[kk++] = Pb[Pinv[k++]] - Gdx[j++] + DELTASTAT*dz[dzoffset++];
-#else
-        ez[kk++] = Pb[Pinv[k++]] - Gdx[j++];
-#endif
+
+        ez[kk++] =  Gdx[j++];
     }
+
     for( l=0; l<C->nsoc; l++ ){
         for( i=0; i<C->soc[l].p; i++ ){
-#if (defined STATICREG) && (STATICREG > 0)
-            ez[kk++] = i<(C->soc[l].p-1) ? Pb[Pinv[k++]] - Gdx[j++] + DELTASTAT*dz[dzoffset++] : Pb[Pinv[k++]] - Gdx[j++] - DELTASTAT*dz[dzoffset++];
-#else
-            ez[kk++] = Pb[Pinv[k++]] - Gdx[j++];
-#endif
+            ez[kk++] =  Gdx[j++];
         }
 #if CONEMODE == 0
         ez[kk] = 0;
@@ -94,22 +126,20 @@ void inline KKT_prod()
         {
             for(i=0;i<3;i++)
             {
-#if (defined STATICREG) && (STATICREG > 0)
-                ez[kk++] = Pb[Pinv[k++]] - Gdx[j++] + DELTASTAT*dz[dzoffset++];
-#else
-				ez[kk++] = Pb[Pinv[k++]] - Gdx[j++];
-#endif
+				ez[kk++] = Gdx[j++];
             }
         }
 #endif
-    for( i=0; i<MTILDE; i++) { truez[i] = Px[Pinv[n+p+i]]; }
+    //Multiply with the hessian
+    for( i=0; i<MTILDE; i++) { truez[i] = -Px[Pinv[n+p+i]]; }
     if( isinit == 0 ){
         scale2add(truez, ez, C);
     } else {
         vadd(MTILDE, truez, ez);
     }
-    nez = norminf(ez,MTILDE);
 
+    //Finally permute again and assign to output
+    for( i=0; i<nK; i++) { Ab[Pinv[i]] = e[i]; }
 }
 
 /**
@@ -126,7 +156,8 @@ void inline KKT_prod()
  *
  * Returns the number of iterative refinement steps really taken.
  */
-        idxint kkt_solve(kkt *KKT, spmat *A, spmat *G, pfloat *Pb, pfloat *dx, pfloat *dy, pfloat *dz, idxint n,
+//TODO rename to kkt_solve
+        idxint kkt_solve_min(kkt *KKT, spmat *A, spmat *G, pfloat *Pb, pfloat *dx, pfloat *dy, pfloat *dz, idxint n,
                          idxint p, idxint m, cone *C, idxint isinit, idxint nitref)
 {
 
