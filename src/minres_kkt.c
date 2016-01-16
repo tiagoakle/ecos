@@ -17,18 +17,99 @@
 
 #include "kkt.h"
 #include "ldl.h"
-#include "splamm.h"
+#include "../include/splamm.h"
 #include "ecos.h"
 #include "cone.h"
 
 #include <math.h>
 
-//Ahead declaration
-void LDL_abs_d_solve(idxint n, pfloat *x, pfloat * D)
+/* Solve with the abs of the diagonal*/
+void inline LDL_abs_dsolve(idxint n, pfloat *x, pfloat * D)
 {
     idxint i = 0;
     for(i;i<n;i++)
         x[i] /= fabs(D[i]);
+}
+
+void inline preconditioner_solve(idxint nK, pfloat* Pb, pfloat *Px, kkt* KKT)
+{
+    /* forward - diagonal - backward solves: Px holds solution */
+    LDL_lsolve2(nK, Pb, KKT->L->jc, KKT->L->ir, KKT->L->pr, Px);
+    LDL_abs_dsolve(nK, Px, KKT->D);
+    LDL_ltsolve(nK, Px, KKT->L->jc, KKT->L->ir, KKT->L->pr);
+}
+
+void inline KKT_prod()
+{
+    /* unpermute x & copy into arrays */
+    unstretch(n, p, C, Pinv, Px, dx, dy, dz);
+
+    /* compute error term */
+    k=0; j=0;
+
+    /* 1. product on dx*/
+
+    /* ex = - A'*dy - G'*dz */
+    if(A) sparseMtVm(A, dy, ex, 0, 0);
+    sparseMtVm(G, dz, ex, 0, 0);
+
+    /* error on dy */
+    if( p > 0 ){
+        /* ey = by - A*dx */
+        sparseMV(A, dx, ey, -1, 0);
+        ney = norminf(ey,p);
+    }
+
+
+    /* --> 3. ez = bz - G*dx + V*dz_true */
+    kk = 0; j=0;
+#if (defined STATICREG) && (STATICREG > 0)
+    dzoffset=0;
+#endif
+    sparseMV(G, dx, Gdx, 1, 1);
+    for( i=0; i<C->lpc->p; i++ ){
+#if (defined STATICREG) && (STATICREG > 0)
+        ez[kk++] = Pb[Pinv[k++]] - Gdx[j++] + DELTASTAT*dz[dzoffset++];
+#else
+        ez[kk++] = Pb[Pinv[k++]] - Gdx[j++];
+#endif
+    }
+    for( l=0; l<C->nsoc; l++ ){
+        for( i=0; i<C->soc[l].p; i++ ){
+#if (defined STATICREG) && (STATICREG > 0)
+            ez[kk++] = i<(C->soc[l].p-1) ? Pb[Pinv[k++]] - Gdx[j++] + DELTASTAT*dz[dzoffset++] : Pb[Pinv[k++]] - Gdx[j++] - DELTASTAT*dz[dzoffset++];
+#else
+            ez[kk++] = Pb[Pinv[k++]] - Gdx[j++];
+#endif
+        }
+#if CONEMODE == 0
+        ez[kk] = 0;
+        ez[kk+1] = 0;
+        k += 2;
+        kk += 2;
+#endif
+    }
+#ifdef EXPCONE
+    for(l=0; l<C->nexc; l++)
+        {
+            for(i=0;i<3;i++)
+            {
+#if (defined STATICREG) && (STATICREG > 0)
+                ez[kk++] = Pb[Pinv[k++]] - Gdx[j++] + DELTASTAT*dz[dzoffset++];
+#else
+				ez[kk++] = Pb[Pinv[k++]] - Gdx[j++];
+#endif
+            }
+        }
+#endif
+    for( i=0; i<MTILDE; i++) { truez[i] = Px[Pinv[n+p+i]]; }
+    if( isinit == 0 ){
+        scale2add(truez, ez, C);
+    } else {
+        vadd(MTILDE, truez, ez);
+    }
+    nez = norminf(ez,MTILDE);
+
 }
 
 /**
