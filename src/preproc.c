@@ -462,17 +462,23 @@ void ECOS_cleanup(pwork* w, idxint keepvars)
 	FREE(w->KKT->Sign);             /* mywork->KKT->Sign = (idxint *)MALLOC(nK*sizeof(idxint));       */
 	FREE(w->KKT->Pinv);             /* mywork->KKT->Pinv = (idxint *)MALLOC(nK*sizeof(idxint));       */
     FREE(w->KKT->P);
-	FREE(w->KKT->PK);               /* mywork->KKT->PK = (idxint *)MALLOC(KU->nnz*sizeof(idxint));    */
-	freeSparseMatrix(w->KKT->PKPt); /* mywork->KKT->PKPt = newSparseMatrix(nK, nK, KU->nnz);          */
-	FREE(w->KKT->RHS1);             /* mywork->KKT->RHS1 = (pfloat *)MALLOC(nK*sizeof(pfloat));       */
-	FREE(w->KKT->RHS2);             /* mywork->KKT->RHS2 = (pfloat *)MALLOC(nK*sizeof(pfloat));       */
-	FREE(w->KKT->work1);            /* mywork->KKT->work1 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
-	FREE(w->KKT->work2);            /* mywork->KKT->work2 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
-    FREE(w->KKT->work3);            /* mywork->KKT->work3 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
-    FREE(w->KKT->work4);            /* mywork->KKT->work4 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
-    FREE(w->KKT->work5);            /* mywork->KKT->work5 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
-    FREE(w->KKT->work6);            /* mywork->KKT->work6 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
-	FREE(w->KKT);                   /* mywork->KKT = (kkt *)MALLOC(sizeof(kkt));                      */
+	FREE(w->KKT->PK);               /* mywork->KKT->PK     = (idxint *)MALLOC(KU->nnz*sizeof(idxint));    */
+	freeSparseMatrix(w->KKT->PKPt); /* mywork->KKT->PKPt   = newSparseMatrix(nK, nK, KU->nnz);          */
+	FREE(w->KKT->RHS1);             /* mywork->KKT->RHS1   = (pfloat *)MALLOC(nK*sizeof(pfloat));       */
+	FREE(w->KKT->RHS2);             /* mywork->KKT->RHS2   = (pfloat *)MALLOC(nK*sizeof(pfloat));       */
+	FREE(w->KKT->work1);            /* mywork->KKT->work1  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+	FREE(w->KKT->work2);            /* mywork->KKT->work2  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work3);            /* mywork->KKT->work3  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work4);            /* mywork->KKT->work4  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work5);            /* mywork->KKT->work5  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work6);            /* mywork->KKT->work6  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work7);            /* mywork->KKT->work7  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work8);            /* mywork->KKT->work8  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work9);            /* mywork->KKT->work9  = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work10);           /* mywork->KKT->work10 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work11);           /* mywork->KKT->work11 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work12);           /* mywork->KKT->work11 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT);                   /* mywork->KKT = (kkt *)MALLOC(sizeof(kkt));                      */
 
 	/* Free memory for cones */
 	if( w->C->lpc->p > 0 ){
@@ -858,12 +864,18 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
 	mywork->KKT->D = (pfloat *)MALLOC(nK*sizeof(pfloat));
 	mywork->KKT->Parent = (idxint *)MALLOC(nK*sizeof(idxint));
 	mywork->KKT->Pinv = (idxint *)MALLOC(nK*sizeof(idxint));
-	mywork->KKT->work1 = (pfloat *)MALLOC(nK*sizeof(pfloat));
-	mywork->KKT->work2 = (pfloat *)MALLOC(nK*sizeof(pfloat));
-    mywork->KKT->work3 = (pfloat *)MALLOC(nK*sizeof(pfloat));
-    mywork->KKT->work4 = (pfloat *)MALLOC(nK*sizeof(pfloat));
-    mywork->KKT->work5 = (pfloat *)MALLOC(nK*sizeof(pfloat));
-    mywork->KKT->work6 = (pfloat *)MALLOC(nK*sizeof(pfloat));
+	mywork->KKT->work1  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+	mywork->KKT->work2  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work3  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work4  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work5  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work6  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work7  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work8  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work9  = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work10 = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work11 = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work12 = (pfloat *)MALLOC(nK*sizeof(pfloat));
 	mywork->KKT->Flag = (idxint *)MALLOC(nK*sizeof(idxint));
 	mywork->KKT->Pattern = (idxint *)MALLOC(nK*sizeof(idxint));
 	mywork->KKT->Lnz = (idxint *)MALLOC(nK*sizeof(idxint));

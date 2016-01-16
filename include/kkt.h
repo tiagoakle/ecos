@@ -45,6 +45,12 @@ typedef struct kkt{
     pfloat* work4;   /* workspace needed for factorization        */
     pfloat* work5;   /* workspace needed for factorization        */
     pfloat* work6;   /* workspace needed for factorization        */
+	pfloat* work7;   /* workspace needed for minres               */
+	pfloat* work8;   /* workspace needed for minres               */
+	pfloat* work9;   /* workspace needed for minres               */
+	pfloat* work10;   /* workspace needed for minres               */
+	pfloat* work11;   /* workspace needed for minres               */
+    pfloat* work12;   /* workspace needed for minres               */
 	pfloat* RHS1;    /* Right hand side 1						  */
 	pfloat* RHS2;    /* Right hand side 2           			  */	
 	pfloat* dx1;     /* search direction of size n				  */
@@ -65,6 +71,7 @@ typedef struct kkt{
 	
 	pfloat delta;    /* size of regularization					  */
 } kkt;
+
 
 /* Return codes */
 #define KKT_PROBLEM (0)
