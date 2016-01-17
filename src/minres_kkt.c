@@ -182,7 +182,6 @@ void KKT_prod(idxint n,
  *
  * Returns the number of iterative refinement steps really taken.
  */
-//TODO rename to kkt_solve
 idxint kkt_solve(kkt *KKT, spmat *A, spmat *G, pfloat *Pb, pfloat *dx, pfloat *dy, pfloat *dz, idxint n,
                  idxint p, idxint m, cone *C, idxint isinit, idxint nitref) {
 
@@ -195,7 +194,7 @@ idxint kkt_solve(kkt *KKT, spmat *A, spmat *G, pfloat *Pb, pfloat *dx, pfloat *d
     idxint i, k, l, j, kk, kItRef;
 
     idxint *Pinv = KKT->Pinv;
-    pfloat *Px = KKT->work1;
+    pfloat *Px = KKT->work13; //Minres output
     idxint nK = KKT->PKPt->n;
 
     /* forward - diagonal - backward solves: Px holds solution */
@@ -203,17 +202,38 @@ idxint kkt_solve(kkt *KKT, spmat *A, spmat *G, pfloat *Pb, pfloat *dx, pfloat *d
     //LDL_dsolve(nK, Px, KKT->D);
     //LDL_ltsolve(nK, Px, KKT->L->jc, KKT->L->ir, KKT->L->pr);
 
-    minres(nK, Px, Pb, KKT, A, G, C, isinit, n, m, p, 100, 1E-16, 1);
-    //Product against K to verify the quality of the solution
-    
+    idxint show = 1;
+    minres(nK, Px, Pb, KKT, A, G, C, isinit, n, m, p, 20, 1E-15, show);
 
-    unstretch(n, p, C, Pinv, Px, dx, dy, dz);
+    //Product against K to verify the quality of the solution
+    pfloat* prod_output = KKT->work5;
+    pfloat* minres_sol = KKT->work6;
+    //Move the original input to work6
+    for(i=0;i<nK;i++)
+        minres_sol[i] = Px[i];
+
+    KKT_prod(n, m, p, nK, C, A, G, minres_sol, prod_output, isinit, Pinv, KKT->work1, KKT->work2, KKT->work3, KKT->work4);
+
+    //for(i=0 ;i< nK ;i++) PRINTTEXT("Ax_minres[i]: %g b[i] %g\n",prod_output[i],Pb[i]);
+
+    vsubscale(nK, 1.0, Pb, prod_output);
+    pfloat norm_res = norm2(prod_output, nK);
+    PRINTTEXT("Norm residual after minres %g\n", norm_res);
+
+    unstretch(n, p, C, Pinv, minres_sol, dx, dy, dz);
     kItRef = 0;
 
     return kItRef;
 }
 
-void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone *C, idxint isinit,
+void minres(idxint nK,
+            pfloat *x,
+            pfloat *b,
+            kkt *KKT,
+            spmat *A,
+            spmat *G,
+            cone *C,
+            idxint isinit,
             idxint n_out,
             idxint m,
             idxint p,
@@ -222,7 +242,7 @@ void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone 
             idxint show) {
 
     //Assign the working memory
-    pfloat *y = KKT->work5;
+    pfloat *y = KKT->work6;
     pfloat *r1 = KKT->work7;
     pfloat *r2 = KKT->work8;
     pfloat *w = KKT->work9;
@@ -236,13 +256,12 @@ void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone 
     istop = 0;
     itn = 0;
     done = 0;
-    pfloat rnorm, ynorm, Anorm, Acond;
-    rnorm = 0;
-    ynorm = 0;
-    Anorm = 0;
-    Acond = 0;
-
-    pfloat beta1 = 0;
+    pfloat rnorm  = 0;
+    pfloat ynorm  = 0;
+    pfloat Anorm  = 0;
+    pfloat Arnorm = 0;
+    pfloat Acond  = 0;
+    pfloat beta1  = 0;
 
     //Initialize the output to zeros
     for (i = 0; i < n; i++) {
@@ -254,14 +273,13 @@ void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone 
         r1[i] = b[i];
     }
 
-
     //Solve the first preconditioned iteration
     preconditioner_solve(n, b, y, KKT);
     //beta1 = b'y
     beta1 = eddot(n, b, y);
 
     if (beta1 <= 0) {
-        if (beta1 < 0)istop = 9;
+        if (beta1 < 0) istop = 9;
         show = 1;
         done = 1;
     }
@@ -270,7 +288,7 @@ void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone 
     if (beta1 > 0) beta1 = sqrt(beta1);
 
     //Initialize other quantitites
-    pfloat oldb, beta, dbar, epsln, qrnorm, phi, phibar, rhs1, rhs2, tnorm2, gmax, gmin, cs, sn;
+
     pfloat oldeps, delta, gbar, root, gamma, denom, epsa, epsx, epsr, diag, test1, test2, prnt;
     pfloat t1, t2;
 
@@ -278,24 +296,25 @@ void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone 
     pfloat z = 0;
     pfloat alfa = 0;
 
-    oldb = 0;
-    beta = beta1;
-    dbar = 0;
-    epsln = 0;
-    qrnorm = beta1;
-    phibar = beta1;
-    rhs1 = beta1;
-    rhs2 = 0;
-    tnorm2 = 0;
-    gmax = 0;
-    gmin = REAL_MAX;
-    cs = -1;
-    sn = -1;
+    pfloat oldb = 0;
+    pfloat beta = beta1;
+    pfloat dbar = 0;
+    pfloat epsln = 0;
+    pfloat qrnorm = beta1;
+    pfloat phibar = beta1;
+    pfloat rhs1 = beta1;
+    pfloat rhs2 = 0;
+    pfloat tnorm2 = 0;
+    pfloat gmax = 0;
+    pfloat gmin = REAL_MAX;
+    pfloat cs = -1;
+    pfloat sn = 0;
+    pfloat phi;
 
     for (i = 0; i < n; i++) {
-        r2[i] = r1[i];
-        w[i] = 0;
+        w[i]  = 0;
         w2[i] = 0;
+        r2[i] = r1[i];
     }
 
 
@@ -313,6 +332,7 @@ void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone 
             if (itn >= 2) {
                 vsubscale(n, beta / oldb, r1, y);
             }
+
             alfa = eddot(n, v, y);
             vsubscale(n, alfa / beta, r2, y);
             //r1<-r2<-y
@@ -338,12 +358,12 @@ void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone 
 
             //Apply the previous rotation Qk-1
             oldeps = epsln;
-            delta = cs * dbar - cs * alfa;
+            delta = cs * dbar + sn*alfa;
             gbar = sn * dbar - cs * alfa;
             epsln = sn * beta;
             dbar = -cs * beta;
             root = sqrt(gbar * gbar + dbar * dbar);
-            Anorm = phibar * root;
+            Arnorm = phibar * root;
 
             //Compute the plane rotation Qk
 
@@ -430,5 +450,6 @@ void minres(idxint nK, pfloat *x, pfloat *b, kkt *KKT, spmat *A, spmat *G, cone 
         }//End main loop
     }//end if done==0 from above while
     //Print final status
-    PRINTTEXT("istop = %ld, iter %ld\n", istop, itn);
+    if(show)
+        PRINTTEXT("Final Iteration %ld: istop = %ld\n", itn, istop);
 }

@@ -478,6 +478,7 @@ void ECOS_cleanup(pwork* w, idxint keepvars)
     FREE(w->KKT->work10);           /* mywork->KKT->work10 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
     FREE(w->KKT->work11);           /* mywork->KKT->work11 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
     FREE(w->KKT->work12);           /* mywork->KKT->work11 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
+    FREE(w->KKT->work13);           /* mywork->KKT->work11 = (pfloat *)MALLOC(nK*sizeof(pfloat));      */
     FREE(w->KKT);                   /* mywork->KKT = (kkt *)MALLOC(sizeof(kkt));                      */
 
 	/* Free memory for cones */
@@ -876,6 +877,7 @@ pwork* ECOS_setup(idxint n, idxint m, idxint p, idxint l, idxint ncones, idxint*
     mywork->KKT->work10 = (pfloat *)MALLOC(nK*sizeof(pfloat));
     mywork->KKT->work11 = (pfloat *)MALLOC(nK*sizeof(pfloat));
     mywork->KKT->work12 = (pfloat *)MALLOC(nK*sizeof(pfloat));
+    mywork->KKT->work13 = (pfloat *)MALLOC(nK*sizeof(pfloat));
 	mywork->KKT->Flag = (idxint *)MALLOC(nK*sizeof(idxint));
 	mywork->KKT->Pattern = (idxint *)MALLOC(nK*sizeof(idxint));
 	mywork->KKT->Lnz = (idxint *)MALLOC(nK*sizeof(idxint));

@@ -51,6 +51,7 @@ typedef struct kkt{
 	pfloat* work10;   /* workspace needed for minres               */
 	pfloat* work11;   /* workspace needed for minres               */
     pfloat* work12;   /* workspace needed for minres               */
+    pfloat* work13;   /* workspace needed for minres               */
 	pfloat* RHS1;    /* Right hand side 1						  */
 	pfloat* RHS2;    /* Right hand side 2           			  */	
 	pfloat* dx1;     /* search direction of size n				  */

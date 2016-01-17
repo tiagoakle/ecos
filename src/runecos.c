@@ -36,7 +36,7 @@ int main(void)
 	
 	/* set up data */	
 	mywork = ECOS_setup(n, m, p, l, ncones, q, 0, Gpr, Gjc, Gir, Apr, Ajc, Air, c, h, b);
- 
+	mywork->stgs->maxit =1;
     if( mywork != NULL ){
 	
 		/* solve */	
